@@ -1,0 +1,11 @@
+/target
+/examples
+/pMars
+/references
+/warriors
+/warriors-n1LS
+tmp
+
+.DS_Store
+out.txt
+*.rs_ignore
