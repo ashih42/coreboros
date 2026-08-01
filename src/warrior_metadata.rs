@@ -12,7 +12,8 @@ impl WarriorMetadata {
     /// Example: filepath: "warriors/doge.red" -> name: "doge"
     #[allow(
         clippy::missing_panics_doc,
-        reason = "This operation will not panic because an earlier attempt to open and read this file has succeeded."
+        clippy::unwrap_used,
+        reason = "This operation is guaranteed to succeed because an earlier operation to open and read this file has succeeded."
     )]
     #[must_use]
     pub fn from_file(filepath: &str) -> Self {

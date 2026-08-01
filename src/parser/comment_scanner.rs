@@ -22,6 +22,7 @@ pub fn scan_comment(key: CommentKeyPattern, comment: &str) -> Option<&str> {
 
     #[allow(
         clippy::missing_panics_doc,
+        clippy::unwrap_used,
         reason = "These regex definitions are valid."
     )]
     let re = REGEXES.get_or_init(|| CompiledRegexes {

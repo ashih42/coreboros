@@ -39,6 +39,10 @@ impl Expr {
     pub fn parse_expr(expr_pairs: Pairs<Rule>) -> Self {
         EXPR_PARSER
             .map_primary(|primary| match primary.as_rule() {
+                #[allow(
+                    clippy::unwrap_used,
+                    reason = "The grammar guarantees the string is an integer."
+                )]
                 Rule::integer => Self::Integer(primary.as_str().parse::<i32>().unwrap()),
                 Rule::label => Self::Label(primary.as_str().to_owned()),
                 Rule::expr => Self::parse_expr(primary.into_inner()),
@@ -146,6 +150,7 @@ impl Expr {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;

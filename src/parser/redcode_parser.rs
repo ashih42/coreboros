@@ -18,6 +18,10 @@ pub struct RedcodeParser;
 type Node<'i> = pest_consume::Node<'i, Rule, ()>;
 
 /// Implement handlers for each grammar production.
+#[allow(
+    clippy::unwrap_used,
+    reason = "The grammar guarantees valid children exist under the syntax tree."
+)]
 #[pest_consume::parser]
 impl RedcodeParser {
     #[allow(
@@ -179,7 +183,8 @@ pub fn parse_redcode(redcode: &str) -> Result<Vec<RedcodeLine>, RedcodeError> {
 
     #[allow(
         clippy::missing_panics_doc,
-        reason = "The tree structure is guaranteed by the grammar."
+        clippy::unwrap_used,
+        reason = "The grammar guarantees there exists a top-level `file` node."
     )]
     let root = nodes.single().unwrap();
     let lines = RedcodeParser::file(root);
@@ -187,6 +192,7 @@ pub fn parse_redcode(redcode: &str) -> Result<Vec<RedcodeLine>, RedcodeError> {
     Ok(lines)
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
