@@ -1,6 +1,8 @@
+use anyhow::Result;
+
 use crate::{
     instruction::{addressing_mode::AddressingMode, operand::Operand},
-    parser::{expr::Expr, expr_error::ExprError, label_dictionary::LabelDictionary},
+    parser::{expr::Expr, label_dictionary::LabelDictionary},
 };
 
 #[derive(Debug)]
@@ -19,11 +21,7 @@ impl OperandBuffer {
     ///
     /// # Errors
     /// Will return `Err` if `expr` fails to evaluate.
-    pub fn build(
-        self,
-        label_dictionary: &LabelDictionary,
-        current_line: usize,
-    ) -> Result<Operand, ExprError> {
+    pub fn build(self, label_dictionary: &LabelDictionary, current_line: usize) -> Result<Operand> {
         let mode = self.mode.unwrap_or_default();
         let number = self.expr.eval(label_dictionary, current_line)?;
 

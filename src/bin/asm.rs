@@ -19,7 +19,9 @@ fn main() {
 
     match Warrior::from_file(filepath) {
         Err(err) => {
-            eprintln!("Error: {err}");
+            for cause in err.chain() {
+                eprintln!("{cause}");
+            }
         }
 
         Ok(warrior) => {

@@ -12,6 +12,7 @@ name = "asm"
 path = "src/bin/asm.rs"
 
 [dependencies]
+anyhow = "1.0.104"
 derive_more = { version = "2.1.1", features = ["display"] }
 env_logger = "0.11.11"
 log = "0.4.33"
@@ -21,7 +22,6 @@ pest_derive = "2.8.8"
 regex = "1.13.1"
 strum = "0.28.0"
 strum_macros = "0.28.0"
-thiserror = "2.0.19"
 
 [dev-dependencies]
 indoc = "2.0.7"

@@ -1,8 +1,7 @@
+use anyhow::{Result, bail};
 use std::collections::HashMap;
 
-use crate::parser::{
-    label_definition::LabelDefinition, redcode_error::RedcodeError, redcode_line::RedcodeLine,
-};
+use crate::parser::{label_definition::LabelDefinition, redcode_line::RedcodeLine};
 
 #[derive(Default)]
 pub struct LabelDictionary {
@@ -18,7 +17,7 @@ impl LabelDictionary {
         &mut self,
         line: &RedcodeLine,
         current_line: usize,
-    ) -> Result<(), RedcodeError> {
+    ) -> Result<()> {
         if let Some(labels) = &line.label_definitions {
             for label in labels {
                 self.insert_label_definition(label, current_line, line.text_line_number)?;
@@ -34,13 +33,15 @@ impl LabelDictionary {
         label: &str,
         instruction_line_number: usize,
         text_line_number: usize,
-    ) -> Result<(), RedcodeError> {
+    ) -> Result<()> {
         if let Some(existing_definition) = self.dictionary.get(label) {
-            return Err(RedcodeError::DuplicateLabelDefinition {
-                label: label.to_owned(),
-                first_defined_text_line_number: existing_definition.text_line_number,
-                later_redefined_text_line_number: text_line_number,
-            });
+            bail!(
+                "Duplicate label definition for \"{label}\"\n\
+                First defined on line {first_def}\n\
+                Later redefined on line {second_def}",
+                first_def = existing_definition.text_line_number,
+                second_def = text_line_number
+            );
         }
 
         self.dictionary.insert(
