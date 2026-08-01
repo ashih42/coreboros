@@ -1,0 +1,159 @@
+//! This file defines the grammar for `pest` to generate a parser for the Redcode assembly language
+//! based on the ICWS'94 Standard: <https://corewar.co.uk/standards/icws94.htm#2.3>
+//!
+//! Since the ICWS'94 Standard is incomplete and never officially adopted, there are several points of interest where
+//! this grammar intentionally differs from the grammar given in ICWS'94 Standard:
+//! - Use `pest`'s builtin `NEWLINE` for { "\n" | "\r\n" | "\r" } (Assume the "\n\r" specified in the standard to be a mistake.)
+//! - Enfroce standard arithmetic operator precedence, such that multiplication, division, and modulo are performed before addition and subtraction.
+//! - Allow "-" as the negation unary operator.
+//! - Require the pseudo-opcode "ORG" followed by exactly 1 operand.
+//! - Require the pseudo-opcode "END" followed by 0 or 1 operand.
+
+/// `file` is the top-level nonterminal. Start here.
+/// `file` may contain 0 or more lines.
+file = {
+    SOI ~
+    (line? ~ NEWLINE)* ~
+    EOI
+}
+
+/// `line` may have any of these 3 optional components in order:
+/// - 0 or 1 `label_definitions`
+/// - 0 or 1 of any of { `instruction`, `org_instruction`, `end_instruction` }
+/// - 0 or 1 `comment`
+line = {
+    label_definitions?
+  ~ (instruction | org_instruction | end_instruction)?
+  ~ comment?
+}
+
+/// `label_definitions` contains 1 or more `label_definition`.
+label_definitions = {
+  label_definition+
+}
+
+/// `label_definition` is `label`, optionally followed by ":".
+label_definition = @{
+  label ~ ":"?
+}
+
+/// `label` can be any alphanumeric or "_" characters, just not starting with a digit character,
+/// and it cannot be the exact same name as an `opcode`, `ORG`, or `END.
+label = ${
+  !(
+      ( opcode | (opcode_name ~ NEWLINE) )
+    | ( (^"ORG" | ^"END") ~ (WHITESPACE | NEWLINE) )
+  )
+  ~ (ASCII_ALPHA | "_")
+  ~ (ASCII_ALPHANUMERIC | "_")*
+}
+
+/// This `WHITESPACE` definition allows `pest` to implicitly insert 0 or more whitespaces between tokens wherever possible.
+WHITESPACE = _{ " " | "\t" }
+
+/// `org_instruction` must be "ORG", followed by exactly 1 operand `expr`.
+org_instruction = ${
+  ^"ORG" ~ WHITESPACE+ ~ expr
+}
+
+/// `end_instruction` must be "END", followed by 0 or 1 operand `expr`.
+end_instruction = ${
+  ^"END" ~ (WHITESPACE+ ~ expr)?
+}
+
+/// `instruction` contains `operation`, followed by first `operand`, and optionally followed by second `operand`.
+instruction = {
+  operation ~ operand ~ ("," ~ operand)?
+}
+
+/// `operation` contains `opcode`, optionally followed by `modifier`.
+/// Implicit WHITESPACE insertion is disabled here, since there must be no WHITESPACE at all before and after "." if `modifier` is provided.
+/// Also, the next character after `operation` must be a WHITESPACE.
+operation = ${
+  ( opcode ~ ("." ~ modifier)? ) ~ &WHITESPACE
+}
+
+/// `operand` may optionally start with `mode`, followed by the required `expr`.
+operand = {
+  mode? ~ expr
+}
+
+/// `opcode` must be exactly `opcode_name`, and the character after it must be "." or WHITESPACE.
+/// e.g. This allows "adder50" to be parsed as a `label`, but not as `opcode`="add", `operand`="er50".
+opcode = @{ opcode_name ~ &("." | WHITESPACE) }
+
+/// `opcode_name` is a 3-character terminal.
+opcode_name = @{
+    ^"DAT"
+  | ^"MOV"
+  | ^"ADD"
+  | ^"SUB"
+  | ^"MUL"
+  | ^"DIV"
+  | ^"MOD"
+  | ^"JMP"
+  | ^"JMZ"
+  | ^"JMN"
+  | ^"DJN"
+  | ^"SPL"
+  | ^"CMP"
+  | ^"SEQ"
+  | ^"SNE"
+  | ^"SLT"
+  | ^"LDP"
+  | ^"STP"
+  | ^"NOP"
+}
+
+/// `modifier` is a 1 or 2-character terminal.
+modifier = {
+    ^"AB"
+  | ^"BA"
+  | ^"A"
+  | ^"B"
+  | ^"F"
+  | ^"X"
+  | ^"I"
+}
+
+/// `mode` is a 1-character terminal.
+mode = { "#" | "$" | "*" | "@" | "{" | "}" | "<" | ">" }
+
+/// `comment` starts with a ";", followed by 0 or more non-newline characters.
+comment = { ";" ~ (!NEWLINE ~ ANY)* }
+
+/// `expr` is the arbitrarily long, numeric part of `operand`.
+/// In this grammar, `expr` is defined simply with no operator precedence among `binary_operator`.
+/// This is fine, as we will use a `PrattParser` to define and enforce standard arithmetic operator precedence.
+expr = {
+  atom ~ (binary_operator ~ atom)*
+}
+
+/// `binary_operator` is defined for addition, subtraction, multiplication, division, and modulo operations.
+binary_operator = _{ add | subtract | multiply | divide | modulo }
+add = { "+" }
+subtract = { "-" }
+multiply = { "*" }
+divide = { "/" }
+modulo = { "%" }
+
+/// `atom` is an intermediate nonterminal at which to introduce unary operations.
+atom = _{ unary_minus? ~ primary }
+
+/// `unary_minus` is the negation operator.
+unary_minus = { "-" }
+
+/// `primary` is either a terminal (`integer` or `label`) or a nonterminal (`expr`).
+primary = _{
+    integer
+  | label
+  | "(" ~ expr ~ ")"
+}
+
+/// `integer` may have an optional sign character, followed by digit characters, with no extraneous leading zeroes.
+integer = @{
+  ( "+" | "-" )? ~ (
+    ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+
+    | ASCII_DIGIT
+  )
+}

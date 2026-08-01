@@ -3,6 +3,10 @@ name = "coreboros"
 version = "0.1.0"
 edition = "2024"
 
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
 [[bin]]
 name = "asm"
 path = "src/bin/asm.rs"
