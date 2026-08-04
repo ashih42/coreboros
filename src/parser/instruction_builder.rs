@@ -1,11 +1,11 @@
+use anyhow::Result;
+
 use crate::{
     instruction::{
         Instruction, addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode,
         operand::Operand, operation::Operation,
     },
-    parser::{
-        expr_error::ExprError, label_dictionary::LabelDictionary, operand_buffer::OperandBuffer,
-    },
+    parser::{label_dictionary::LabelDictionary, operand_buffer::OperandBuffer},
 };
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl InstructionBuilder {
         self,
         label_dictionary: &LabelDictionary,
         current_line: usize,
-    ) -> Result<Instruction, ExprError> {
+    ) -> Result<Instruction> {
         let operand_1 = self.operand_1.build(label_dictionary, current_line)?;
 
         let operand_2 = self

@@ -1,4 +1,6 @@
-use crate::parser::{expr::Expr, expr_error::ExprError, label_dictionary::LabelDictionary};
+use anyhow::Result;
+
+use crate::parser::{expr::Expr, label_dictionary::LabelDictionary};
 
 #[derive(Debug)]
 pub struct OrgInstructionBuffer {
@@ -15,7 +17,7 @@ impl OrgInstructionBuffer {
     ///
     /// # Errors
     /// Will return `Err` if `expr` fails to evaluate.
-    pub fn eval_origin(self, label_dictionary: &LabelDictionary) -> Result<i32, ExprError> {
+    pub fn eval_origin(self, label_dictionary: &LabelDictionary) -> Result<i32> {
         self.expr.eval_absolute_address(label_dictionary)
     }
 }

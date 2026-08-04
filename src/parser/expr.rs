@@ -1,8 +1,8 @@
+use anyhow::{Context as _, Result, bail};
 use pest::iterators::Pairs;
 
 use crate::parser::{
-    expr_error::ExprError, expr_parser::EXPR_PARSER, label_dictionary::LabelDictionary,
-    redcode_parser::Rule,
+    expr_parser::EXPR_PARSER, label_dictionary::LabelDictionary, redcode_parser::Rule,
 };
 
 /// `Expr` is a node in the expression tree, to be constructed in the first pass, and
@@ -77,11 +77,7 @@ impl Expr {
     /// - a label is undefined.
     /// - attempt to perform division by zero.
     /// - attempt to perform modulo by zero.
-    pub fn eval(
-        &self,
-        label_dictionary: &LabelDictionary,
-        current_line: usize,
-    ) -> Result<i32, ExprError> {
+    pub fn eval(&self, label_dictionary: &LabelDictionary, current_line: usize) -> Result<i32> {
         match self {
             Self::Integer(i) => Ok(*i),
 
@@ -99,17 +95,15 @@ impl Expr {
                     BinaryOperator::Multiply => Ok(lhs * rhs),
                     BinaryOperator::Divide => {
                         if rhs == 0 {
-                            Err(ExprError::DivisionByZero)
-                        } else {
-                            Ok(lhs / rhs)
+                            bail!("Division by zero");
                         }
+                        Ok(lhs / rhs)
                     }
                     BinaryOperator::Modulo => {
                         if rhs == 0 {
-                            Err(ExprError::ModuloByZero)
-                        } else {
-                            Ok(lhs % rhs)
+                            bail!("Modulo by zero");
                         }
+                        Ok(lhs % rhs)
                     }
                 }
             }
@@ -123,10 +117,7 @@ impl Expr {
     /// - a label is undefined.
     /// - attempt to perform division by zero.
     /// - attempt to perform modulo by zero.
-    pub fn eval_absolute_address(
-        &self,
-        label_dictionary: &LabelDictionary,
-    ) -> Result<i32, ExprError> {
+    pub fn eval_absolute_address(&self, label_dictionary: &LabelDictionary) -> Result<i32> {
         self.eval(label_dictionary, 0)
     }
 
@@ -136,17 +127,10 @@ impl Expr {
         label: &str,
         label_dictionary: &LabelDictionary,
         current_line: usize,
-    ) -> Result<i32, ExprError> {
+    ) -> Result<i32> {
         label_dictionary
             .get_relative_line_number(label, current_line)
-            .map_or_else(
-                || {
-                    Err(ExprError::UndefinedLabel {
-                        label: label.to_owned(),
-                    })
-                },
-                Ok,
-            )
+            .with_context(|| format!("Undefined label: \"{label}\""))
     }
 }
 
@@ -172,7 +156,7 @@ mod tests {
         let expr = Expr::parse_expr(root.into_inner());
         let answer = expr.eval(&label_dictionary, current_line);
 
-        assert_eq!(answer, Ok(7));
+        assert!(matches!(answer, Ok(7)));
     }
 
     #[test]
@@ -190,7 +174,7 @@ mod tests {
         let expr = Expr::parse_expr(root.into_inner());
         let answer = expr.eval(&label_dictionary, current_line);
 
-        assert_eq!(answer, Err(ExprError::DivisionByZero));
+        assert!(answer.is_err());
     }
 
     #[test]
@@ -208,7 +192,7 @@ mod tests {
         let expr = Expr::parse_expr(root.into_inner());
         let answer = expr.eval(&label_dictionary, current_line);
 
-        assert_eq!(answer, Err(ExprError::ModuloByZero));
+        assert!(answer.is_err());
     }
 
     #[test]
@@ -227,11 +211,6 @@ mod tests {
         let expr = Expr::parse_expr(root.into_inner());
         let answer = expr.eval(&label_dictionary, current_line);
 
-        assert_eq!(
-            answer,
-            Err(ExprError::UndefinedLabel {
-                label: undefined_label.to_owned()
-            })
-        );
+        assert!(answer.is_err());
     }
 }

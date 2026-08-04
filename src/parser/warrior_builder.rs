@@ -1,46 +1,47 @@
-use std::{fs, mem, path::PathBuf};
+use anyhow::{Context as _, Result, bail};
+use std::{fs, mem};
 
 use crate::{
     instruction::Instruction,
     parser::{
         comment_scanner::{CommentKeyPattern, scan_comment},
         label_dictionary::LabelDictionary,
-        redcode_error::RedcodeError,
         redcode_line::RedcodeLine,
         redcode_parser,
-        warrior_error::WarriorError,
     },
     warrior::Warrior,
     warrior_metadata::WarriorMetadata,
 };
 
 pub struct WarriorBuilder {
-    filepath: PathBuf,
     metadata: WarriorMetadata,
     lines: Vec<RedcodeLine>,
     label_dictionary: LabelDictionary,
 }
 
 impl WarriorBuilder {
-    /// Try to construct a `WarriorBuilder` with partially populated data from input file.
+    /// Try to construct a `Warrior` from input Redcode file at `filepath`.
+    ///
+    /// # Errors
+    /// Will return `Err` if Warrior is not valid for any syntax, semantic, or logic reason.
+    pub fn from_file(filepath: &str) -> Result<Warrior> {
+        Self::new(filepath)
+            .and_then(Self::build)
+            .with_context(|| format!("Error in warrior: {filepath}"))
+    }
+
+    /// Try to construct a `WarriorBuilder`.
     ///
     /// # Errors
     /// Will return `Err` if:
-    /// - Fail to open/read file.
+    /// - Cannot open/read file.
     /// - Input Redcode fails syntax analysis.
-    pub fn new(filepath: &str) -> Result<Self, WarriorError> {
-        let redcode = fs::read_to_string(filepath).map_err(|err| WarriorError::FileError {
-            filepath: filepath.into(),
-            err,
-        })?;
+    fn new(filepath: &str) -> Result<Self> {
+        let redcode = fs::read_to_string(filepath)?;
 
         log::info!("Read input redcode from \"{filepath}\":\n\n{redcode}\n\n");
 
-        let mut lines =
-            redcode_parser::parse_redcode(&redcode).map_err(|err| WarriorError::RedcodeError {
-                filepath: filepath.into(),
-                err,
-            })?;
+        let mut lines = redcode_parser::parse_redcode(&redcode)?;
         Self::truncate_after_end(&mut lines);
 
         // for line in &lines {
@@ -48,7 +49,6 @@ impl WarriorBuilder {
         // }
 
         Ok(Self {
-            filepath: filepath.into(),
             metadata: WarriorMetadata::from_file(filepath),
             lines,
             label_dictionary: LabelDictionary::default(),
@@ -73,36 +73,25 @@ impl WarriorBuilder {
     /// - Failure in second pass of semantic analysis.
     /// - `instructions` is empty.
     /// - `origin` is not valid.
-    pub fn build(mut self) -> Result<Warrior, WarriorError> {
+    fn build(mut self) -> Result<Warrior> {
         // 1. First pass of semantic analysis.
-        self.first_pass()
-            .map_err(|err| WarriorError::RedcodeError {
-                filepath: self.filepath.clone(),
-                err,
-            })?;
+        self.first_pass()?;
 
         // // 2. Second pass of semantic analysis.
-        let (instructions, origin) =
-            self.second_pass()
-                .map_err(|err| WarriorError::RedcodeError {
-                    filepath: self.filepath.clone(),
-                    err,
-                })?;
+        let (instructions, origin) = self.second_pass()?;
 
         // 3. Validate instructions is not empty.
         if instructions.is_empty() {
-            return Err(WarriorError::EmptyInstructions {
-                filepath: self.filepath.clone(),
-            });
+            bail!("No instructions in warrior");
         }
 
         // 4. Validate origin is valid.
         if !Self::validate_origin(origin, &instructions) {
-            return Err(WarriorError::InvalidOrigin {
-                filepath: self.filepath.clone(),
-                num_instructions: instructions.len(),
-                origin,
-            });
+            bail!(
+                "Invalid program origin\n\
+                Warrior contains {} instructions, but origin points to {origin}",
+                instructions.len()
+            );
         }
 
         #[allow(
@@ -129,7 +118,7 @@ impl WarriorBuilder {
     /// The first pass of semantic analysis involves:
     /// - Inserting label definitions in dictionary.
     /// - Updating warrior metadata from comments.
-    fn first_pass(&mut self) -> Result<(), RedcodeError> {
+    fn first_pass(&mut self) -> Result<()> {
         let mut current_instruction_line_number = 0;
 
         for line in &self.lines {
@@ -181,48 +170,58 @@ impl WarriorBuilder {
     /// - Determining `origin` from pseudo-instructions.
     ///
     /// Return concrete instructions and a temporary signed `origin` to be validated.
-    fn second_pass(&mut self) -> Result<(Vec<Instruction>, i32), RedcodeError> {
+    fn second_pass(&mut self) -> Result<(Vec<Instruction>, i32)> {
         let mut current_instruction_line_number = 0;
 
         let mut instructions = Vec::new();
         let mut origin = 0;
 
         for line in mem::take(&mut self.lines) {
-            // Build the concrete `instruction`.
-            if let Some(instruction_builder) = line.instruction {
-                let instruction = instruction_builder
-                    .build(&self.label_dictionary, current_instruction_line_number)
-                    .map_err(|err| RedcodeError::ExprEvaluation {
-                        line_number: line.text_line_number,
-                        err,
-                    })?;
+            let line_number = line.text_line_number;
 
-                instructions.push(instruction);
-                current_instruction_line_number += 1;
-            }
-
-            // Update `origin` from `ORG` instruction.
-            if let Some(org) = line.org_instruction {
-                origin = org.eval_origin(&self.label_dictionary).map_err(|err| {
-                    RedcodeError::ExprEvaluation {
-                        line_number: line.text_line_number,
-                        err,
-                    }
-                })?;
-            }
-
-            // Update `origin` from `END` instruction if applicable.
-            if let Some(end) = line.end_instruction
-                && let Some(result) = end.eval_origin(&self.label_dictionary)
-            {
-                origin = result.map_err(|err| RedcodeError::ExprEvaluation {
-                    line_number: line.text_line_number,
-                    err,
-                })?;
-            }
+            Self::process_line_in_second_pass(
+                line,
+                &mut current_instruction_line_number,
+                &mut instructions,
+                &mut origin,
+                &self.label_dictionary,
+            )
+            .with_context(|| format!("Error on line {line_number}:"))?;
         }
 
         Ok((instructions, origin))
+    }
+
+    fn process_line_in_second_pass(
+        line: RedcodeLine,
+        current_instruction_line_number: &mut usize,
+        instructions: &mut Vec<Instruction>,
+        origin: &mut i32,
+        label_dictionary: &LabelDictionary,
+    ) -> Result<()> {
+        // Build the concrete `instruction`.
+        if let Some(instruction_builder) = line.instruction {
+            let instruction =
+                instruction_builder.build(label_dictionary, *current_instruction_line_number)?;
+            // .with_context(|| "Error on line {line.text_line_number}")?;
+
+            instructions.push(instruction);
+            *current_instruction_line_number += 1;
+        }
+
+        // Update `origin` from `ORG` instruction.
+        if let Some(org) = line.org_instruction {
+            *origin = org.eval_origin(label_dictionary)?;
+        }
+
+        // Update `origin` from `END` instruction if applicable.
+        if let Some(end) = line.end_instruction
+            && let Some(result) = end.eval_origin(label_dictionary)
+        {
+            *origin = result?;
+        }
+
+        Ok(())
     }
 }
 
@@ -232,14 +231,7 @@ mod tests {
 
     #[test]
     fn test_invalid_file() {
-        assert!(matches!(
-            WarriorBuilder::new("warriors/no_such_file.red"),
-            Err(WarriorError::FileError { .. })
-        ));
-
-        assert!(matches!(
-            WarriorBuilder::new("warriors/no_permission.red"),
-            Err(WarriorError::FileError { .. })
-        ));
+        assert!(WarriorBuilder::new("warriors/no_such_file.red").is_err());
+        assert!(WarriorBuilder::new("warriors/no_permission.red").is_err());
     }
 }

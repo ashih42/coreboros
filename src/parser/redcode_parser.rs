@@ -1,3 +1,4 @@
+use anyhow::{Context as _, Result};
 use pest_consume::Parser;
 use std::str::FromStr as _;
 
@@ -6,8 +7,7 @@ use crate::{
     parser::{
         end_instruction_buffer::EndInstructionBuffer, expr::Expr,
         instruction_builder::InstructionBuilder, operand_buffer::OperandBuffer,
-        org_instruction_buffer::OrgInstructionBuffer, redcode_error::RedcodeError,
-        redcode_line::RedcodeLine,
+        org_instruction_buffer::OrgInstructionBuffer, redcode_line::RedcodeLine,
     },
 };
 
@@ -177,15 +177,14 @@ impl RedcodeParser {
 ///
 /// # Errors
 /// Will return `Err` if input `redcode` contains syntax errors caught by the grammar.
-pub fn parse_redcode(redcode: &str) -> Result<Vec<RedcodeLine>, RedcodeError> {
-    let nodes = RedcodeParser::parse(Rule::file, redcode)
-        .map_err(|err| RedcodeError::SyntaxError { err: Box::new(err) })?;
+#[allow(
+    clippy::missing_panics_doc,
+    clippy::unwrap_used,
+    reason = "The grammar guarantees there exists a top-level `file` node."
+)]
+pub fn parse_redcode(redcode: &str) -> Result<Vec<RedcodeLine>> {
+    let nodes = RedcodeParser::parse(Rule::file, redcode).context("Invalid syntax:")?;
 
-    #[allow(
-        clippy::missing_panics_doc,
-        clippy::unwrap_used,
-        reason = "The grammar guarantees there exists a top-level `file` node."
-    )]
     let root = nodes.single().unwrap();
     let lines = RedcodeParser::file(root);
 
@@ -199,7 +198,7 @@ mod tests {
     use indoc::indoc;
 
     #[allow(unused)]
-    fn print_result(result: &Result<Vec<RedcodeLine>, RedcodeError>) {
+    fn print_result(result: &Result<Vec<RedcodeLine>>) {
         match &result {
             Ok(lines) => println!("lines:\n{:#?}", lines),
             Err(err) => println!("error:\n{}", err),

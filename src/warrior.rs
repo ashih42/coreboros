@@ -1,6 +1,7 @@
+use anyhow::Result;
+
 use crate::{
-    instruction::Instruction,
-    parser::{warrior_builder::WarriorBuilder, warrior_error::WarriorError},
+    instruction::Instruction, parser::warrior_builder::WarriorBuilder,
     warrior_metadata::WarriorMetadata,
 };
 
@@ -27,13 +28,12 @@ impl Warrior {
         }
     }
 
+    /// Try to construct a `Warrior` from input Redcode file at `filepath`.
     ///
     /// # Errors
-    /// Will return `Err` if:
-    /// - Failure to construct `WarriorBuilder`.
-    /// - Failure in `WarriorBuilder::.build()`.
-    pub fn from_file(filepath: &str) -> Result<Self, WarriorError> {
-        WarriorBuilder::new(filepath)?.build()
+    /// Will return `Err` if Warrior is cannot be constructed.
+    pub fn from_file(filepath: &str) -> Result<Self> {
+        WarriorBuilder::from_file(filepath)
     }
 
     #[must_use]
