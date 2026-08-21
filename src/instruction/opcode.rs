@@ -1,6 +1,11 @@
+use rand::seq::IndexedRandom as _;
 use strum_macros::{Display, EnumString};
 
 // Reference: <https://corewars.org/docs/guide.html>
+#[allow(
+    clippy::upper_case_acronyms,
+    reason = "The preferred style convention is to write opcodes in all capital letters."
+)]
 #[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
 #[strum(ascii_case_insensitive)]
 pub enum Opcode {
@@ -39,6 +44,36 @@ impl Opcode {
             self,
             Self::MOV | Self::ADD | Self::SUB | Self::MUL | Self::DIV | Self::MOD
         )
+    }
+
+    pub fn random_opcode() -> Self {
+        static ALL_OPCODES: &[Opcode] = &[
+            Opcode::DAT,
+            Opcode::MOV,
+            Opcode::ADD,
+            Opcode::SUB,
+            Opcode::MUL,
+            Opcode::DIV,
+            Opcode::MOD,
+            Opcode::JMP,
+            Opcode::JMZ,
+            Opcode::JMN,
+            Opcode::DJN,
+            Opcode::SPL,
+            Opcode::CMP,
+            Opcode::SEQ,
+            Opcode::SNE,
+            Opcode::SLT,
+            Opcode::LDP,
+            Opcode::STP,
+            Opcode::NOP,
+        ];
+
+        #[allow(clippy::expect_used, reason = "ALL_OPCODES is non-empty 👌")]
+        ALL_OPCODES
+            .choose(&mut rand::rng())
+            .copied()
+            .expect("There should be at least one element in `ALL_OPCODES` to randomly choose from")
     }
 }
 

@@ -1,3 +1,4 @@
+use rand::seq::IndexedRandom as _;
 use strum_macros::{Display, EnumString};
 
 #[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
@@ -10,6 +11,25 @@ pub enum Modifier {
     F,
     X,
     I,
+}
+
+impl Modifier {
+    pub fn random_modifier() -> Self {
+        static ALL_MODIFIERS: &[Modifier] = &[
+            Modifier::A,
+            Modifier::B,
+            Modifier::AB,
+            Modifier::BA,
+            Modifier::F,
+            Modifier::X,
+            Modifier::I,
+        ];
+
+        #[allow(clippy::expect_used, reason = "ALL_MODIFIERS is non-empty 👌")]
+        ALL_MODIFIERS.choose(&mut rand::rng()).copied().expect(
+            "There should be at least one element in `ALL_MODIFIERS` to randomly choose from",
+        )
+    }
 }
 
 #[cfg(test)]

@@ -28,13 +28,12 @@ impl Core {
             CoreInitializationStrategy::FillDat00 | CoreInitializationStrategy::Leftover => {
                 vec![CoreCell::default(); core_size]
             }
-            CoreInitializationStrategy::Random => todo!(),
+            CoreInitializationStrategy::Random => std::iter::repeat_with(|| {
+                CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
+            })
+            .take(core_size)
+            .collect(),
         };
-
-        let size_of_core_cell = std::mem::size_of::<CoreCell>();
-        let size_of_core = cells.capacity() * size_of_core_cell;
-        println!("size_of_core_cell: {size_of_core_cell}");
-        println!("size_of_core: {size_of_core_cell} x {core_size} = {size_of_core}");
 
         Self {
             cells,
@@ -47,13 +46,22 @@ impl Core {
     }
 
     pub fn reset(&mut self) {
-        // TODO: actually implement the other strategies.
         match self.initialization_strategy {
             CoreInitializationStrategy::FillDat00 => {
                 self.cells.fill(CoreCell::default());
             }
-            CoreInitializationStrategy::Leftover => (), // Leave core with old values from last battle :)
-            CoreInitializationStrategy::Random => todo!(),
+            CoreInitializationStrategy::Leftover => {
+                for cell in &mut self.cells {
+                    cell.clear_author();
+                }
+            }
+            CoreInitializationStrategy::Random => {
+                let core_size = self.size();
+
+                self.cells.fill_with(|| {
+                    CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
+                });
+            }
         }
     }
 

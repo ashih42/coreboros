@@ -548,20 +548,14 @@ impl Editor {
         renderer: &Renderer,
         config_manager: &mut ConfigManager,
     ) {
-        // println!("CALLING DRAW_CORE_SETTINGS");
-        // println!(
-        //     "config_manager.selected_core_dimension.as_str() = {}",
-        //     config_manager.selected_core_dimension.as_str()
-        // );
+        let full_width = ui.available_width();
 
         ui.heading("Settings");
         ui.separator();
 
-        let full_width = ui.available_width();
+        ui.label("Core Dimension");
 
-        ui.label("Choose a size:");
-
-        let combo_response = egui::ComboBox::from_id_salt("core_dimension_dropdown")
+        egui::ComboBox::from_id_salt("core_dimension_dropdown")
             .selected_text(config_manager.selected_core_dimension.as_str())
             .width(full_width) // Force the ComboBox button to stretch entirely
             .show_ui(ui, |ui| {
@@ -573,18 +567,26 @@ impl Editor {
                     );
                 }
             });
-        // .response;
-        // let x = combo_response.inner;
 
-        // THIS DOESN'T TRIGGER, EVEN THOUGH THE SELECTED THING CHANGED!
-        if combo_response.response.changed() {
-            println!("CHANGED CORE SIZE");
-            // println!(
-            //     "Size changed to: {:?}",
-            //     config_manager.selected_core_dimension.as_str()
-            // );
-        } else {
-            // println!("no change");
-        }
+        ui.add_space(10.0);
+
+        ui.label("Core Initialization Strategy");
+
+        egui::ComboBox::from_id_salt("core_initialization_strategy_dropdown")
+            .selected_text(
+                config_manager
+                    .selected_core_initialization_strategy
+                    .as_str(),
+            )
+            .width(full_width) // Force the ComboBox button to stretch entirely
+            .show_ui(ui, |ui| {
+                for strategy in &config_manager.available_core_initialization_strategies {
+                    ui.selectable_value(
+                        &mut config_manager.selected_core_initialization_strategy,
+                        *strategy,
+                        strategy.as_str(),
+                    );
+                }
+            });
     }
 }

@@ -1,3 +1,4 @@
+use rand::seq::IndexedRandom as _;
 use std::str::FromStr;
 
 // Note: Most enums in this codebase use `strum` to derive to_string() and from_str(),
@@ -36,6 +37,26 @@ pub enum AddressingMode {
 
     #[display(">")]
     BIndirectPostIncrement,
+}
+
+impl AddressingMode {
+    pub fn random_addressing_mode() -> Self {
+        static ALL_ADDRESSING_MODES: &[AddressingMode] = &[
+            AddressingMode::Immediate,
+            AddressingMode::Direct,
+            AddressingMode::AIndirect,
+            AddressingMode::BIndirect,
+            AddressingMode::AIndirectPreDecrement,
+            AddressingMode::AIndirectPostIncrement,
+            AddressingMode::BIndirectPreDecrement,
+            AddressingMode::BIndirectPostIncrement,
+        ];
+
+        #[allow(clippy::expect_used, reason = "ALL_ADDRESSING_MODES is non-empty 👌")]
+        ALL_ADDRESSING_MODES.choose(&mut rand::rng()).copied().expect(
+            "There should be at least one element in `ALL_ADDRESSING_MODES` to randomly choose from",
+        )
+    }
 }
 
 impl FromStr for AddressingMode {

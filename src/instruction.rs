@@ -1,7 +1,8 @@
 use std::fmt;
 
 use crate::instruction::{
-    modifier::Modifier, opcode::Opcode, operand::Operand, operation::Operation,
+    addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode, operand::Operand,
+    operation::Operation,
 };
 
 pub mod addressing_mode;
@@ -54,6 +55,23 @@ impl Instruction {
             b_mode = self.b.mode,
             b_number = self.b.number,
         )
+    }
+
+    pub fn random_instruction_wrapped(core_size: usize) -> Self {
+        let opcode = Opcode::random_opcode();
+        let modifier = Modifier::random_modifier();
+
+        let a_mode = AddressingMode::random_addressing_mode();
+        let a_number = rand::random_range(0..core_size) as i32;
+
+        let b_mode = AddressingMode::random_addressing_mode();
+        let b_number = rand::random_range(0..core_size) as i32;
+
+        Self {
+            operation: Operation::new(opcode, modifier),
+            a: Operand::new(a_mode, a_number),
+            b: Operand::new(b_mode, b_number),
+        }
     }
 }
 

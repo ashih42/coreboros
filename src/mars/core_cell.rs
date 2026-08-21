@@ -57,6 +57,12 @@ impl CoreCell {
         self.instruction_cache.b = b_number.to_string();
         self.b_author = Some(warrior_id);
     }
+
+    pub fn clear_author(&mut self) {
+        self.operation_author = None;
+        self.a_author = None;
+        self.b_author = None;
+    }
 }
 
 #[cfg(test)]
