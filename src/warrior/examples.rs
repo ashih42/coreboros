@@ -60,21 +60,22 @@ impl Warrior {
         Self::from_text(redcode).expect("`imp_factory` example redcode should be valid")
     }
 
-    // pub fn nope() -> Self {
-    //     let redcode = indoc::indoc! {"
-    //         ;name      nope
-    //         ;strategy  I don't know.
+    pub fn nop() -> Self {
+        let redcode = indoc::indoc! {"
+            ;name      nop
+            ;strategy  I do nothing.
 
-    //         nop 0
-    //     "};
+            nop 0
+        "};
 
-    //     Self::from_text(redcode).unwrap()
-    // }
+        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
+        Self::from_text(redcode).expect("`nop` example redcode should be valid")
+    }
 
     pub fn nop_20() -> Self {
         let redcode = indoc::indoc! {"
             ;name      nop_20
-            ;strategy  I nop 20 times.
+            ;strategy  I do nothing 20 times.
 
             nop 0
             nop 1

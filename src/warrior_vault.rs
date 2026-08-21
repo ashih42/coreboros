@@ -11,6 +11,7 @@ impl Default for WarriorVault {
             Warrior::dwarf_verbose(),
             Warrior::imp(),
             Warrior::imp_factory(),
+            Warrior::nop(),
             Warrior::nop_20(),
         ];
 
