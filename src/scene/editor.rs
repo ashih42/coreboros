@@ -548,6 +548,8 @@ impl Editor {
         renderer: &Renderer,
         config_manager: &mut ConfigManager,
     ) {
+        const SPACE_BETWEEN_FEATURES: f32 = 10.0;
+
         let full_width = ui.available_width();
 
         ui.heading("Settings");
@@ -568,7 +570,7 @@ impl Editor {
                 }
             });
 
-        ui.add_space(10.0);
+        ui.add_space(SPACE_BETWEEN_FEATURES);
 
         ui.label("Core Initialization Strategy");
 
@@ -585,6 +587,23 @@ impl Editor {
                         &mut config_manager.selected_core_initialization_strategy,
                         *strategy,
                         strategy.as_str(),
+                    );
+                }
+            });
+
+        ui.add_space(SPACE_BETWEEN_FEATURES);
+
+        ui.label("Task Queue Capacity");
+
+        egui::ComboBox::from_id_salt("task_queue_capacity_dropdown")
+            .selected_text(renderer.num_to_str(config_manager.selected_task_queue_capacity))
+            .width(full_width) // Force the ComboBox button to stretch entirely
+            .show_ui(ui, |ui| {
+                for &capacity in &config_manager.available_task_queue_capacities {
+                    ui.selectable_value(
+                        &mut config_manager.selected_task_queue_capacity,
+                        capacity,
+                        renderer.num_to_str(capacity),
                     );
                 }
             });

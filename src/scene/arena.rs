@@ -445,6 +445,7 @@ impl Arena {
         let warrior_color = color::get_egui_color32(Some(warrior_id));
 
         let tasks_str = renderer.num_to_str(warrior_context.task_queue.len());
+        let task_capacity_str = renderer.num_to_str(warrior_context.task_queue.get_capacity());
         let wins_str = renderer.num_to_str(warrior_context.num_wins);
 
         // Use a thick colored border for the current-turn warrior.
@@ -505,6 +506,8 @@ impl Arena {
                 ui.horizontal(|ui| {
                     ui.label("Tasks:");
                     ui.label(tasks_str);
+                    ui.label("/");
+                    ui.label(task_capacity_str);
                     if warrior_context.task_queue.is_full() {
                         ui.label("(Full)");
                     }

@@ -16,6 +16,10 @@ impl TaskQueue {
         }
     }
 
+    pub fn get_capacity(&self) -> usize {
+        self.tasks.capacity()
+    }
+
     pub fn push_if_not_full(&mut self, address: Address) {
         if self.tasks.len() < self.tasks.capacity() {
             self.tasks.push_back(address);

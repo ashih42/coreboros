@@ -58,7 +58,7 @@ impl Mars {
             .map(|warrior| {
                 WarriorContext::new(
                     warrior,
-                    TaskQueue::with_capacity(config.max_number_of_tasks),
+                    TaskQueue::with_capacity(config.task_queue_capacity),
                 )
             })
             .collect();

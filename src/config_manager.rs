@@ -8,6 +8,9 @@ pub struct ConfigManager {
 
     pub selected_core_initialization_strategy: CoreInitializationStrategy,
     pub available_core_initialization_strategies: Vec<CoreInitializationStrategy>,
+
+    pub selected_task_queue_capacity: usize,
+    pub available_task_queue_capacities: Vec<usize>,
 }
 
 impl Default for ConfigManager {
@@ -19,11 +22,16 @@ impl Default for ConfigManager {
         let available_core_initialization_strategies =
             CoreInitializationStrategy::list_all_values();
 
+        let selected_task_queue_capacity = 64;
+        let available_task_queue_capacities = vec![1, 4, 16, 64, 128, 256];
+
         Self {
             selected_core_dimension,
             available_core_dimensions,
             selected_core_initialization_strategy,
             available_core_initialization_strategies,
+            selected_task_queue_capacity,
+            available_task_queue_capacities,
         }
     }
 }
@@ -33,9 +41,9 @@ impl ConfigManager {
         Config {
             core_dimension: self.selected_core_dimension,
             core_initialization_strategy: self.selected_core_initialization_strategy,
+            task_queue_capacity: self.selected_task_queue_capacity,
 
             cycles_before_tie: 8_000,
-            max_number_of_tasks: 64,
         }
     }
 }

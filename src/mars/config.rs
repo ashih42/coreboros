@@ -8,9 +8,9 @@ pub mod warrior_separation_strategy;
 
 pub struct Config {
     pub core_dimension: CoreDimension,
-
     pub core_initialization_strategy: CoreInitializationStrategy,
+    pub task_queue_capacity: usize,
+    //
     pub cycles_before_tie: u32,
-    pub max_number_of_tasks: usize,
     // TODO: warrior_separation_strategy: WarriorSeparationStrategy
 }
