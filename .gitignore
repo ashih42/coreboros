@@ -4,8 +4,10 @@
 /references
 /warriors
 /warriors-n1LS
+/warriors-simple
 tmp
 
 .DS_Store
-out.txt
 *.rs_ignore
+out.txt
+game.wasm

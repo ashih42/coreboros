@@ -25,7 +25,7 @@ fn main() {
         }
 
         Ok(warrior) => {
-            let load_file = warrior.to_load_file();
+            let load_file = warrior.as_load_file();
             println!("Load File:\n\n{load_file}");
         }
     }

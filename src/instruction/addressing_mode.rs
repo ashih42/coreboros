@@ -38,8 +38,6 @@ pub enum AddressingMode {
     BIndirectPostIncrement,
 }
 
-// TODO: HEY TRY strum again but define the '}' with unicode character
-
 impl FromStr for AddressingMode {
     type Err = &'static str;
 
@@ -54,6 +52,21 @@ impl FromStr for AddressingMode {
             "<" => Ok(Self::BIndirectPreDecrement),
             ">" => Ok(Self::BIndirectPostIncrement),
             _ => Err("Invalid AddressingMode string"),
+        }
+    }
+}
+
+impl AsRef<str> for AddressingMode {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Immediate => "#",
+            Self::Direct => "$",
+            Self::AIndirect => "*",
+            Self::BIndirect => "@",
+            Self::AIndirectPreDecrement => "{",
+            Self::AIndirectPostIncrement => "}",
+            Self::BIndirectPreDecrement => "<",
+            Self::BIndirectPostIncrement => ">",
         }
     }
 }

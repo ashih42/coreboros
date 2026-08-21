@@ -9,7 +9,7 @@ use crate::parser::{
 /// to be evaluated in the second pass of semantic analysis.
 #[derive(Debug)]
 pub enum Expr {
-    Integer(i32),
+    Integer(String),
     Label(String),
     UnaryMinus(Box<Self>),
     BinaryOperation {
@@ -32,18 +32,10 @@ pub enum BinaryOperator {
 impl Expr {
     /// Convert `expr_pairs` created from `RedcodeParser::parse(Rule::expr, input)`
     /// into a `Expr` tree with a nested hierarchy that encodes standard arithmetic operator precedence.
-    #[allow(
-        clippy::missing_panics_doc,
-        reason = "These operations are guaranteed to succeed by the grammar."
-    )]
     pub fn parse_expr(expr_pairs: Pairs<Rule>) -> Self {
         EXPR_PARSER
             .map_primary(|primary| match primary.as_rule() {
-                #[allow(
-                    clippy::unwrap_used,
-                    reason = "The grammar guarantees the string is an integer."
-                )]
-                Rule::integer => Self::Integer(primary.as_str().parse::<i32>().unwrap()),
+                Rule::integer => Self::Integer(primary.as_str().to_owned()),
                 Rule::label => Self::Label(primary.as_str().to_owned()),
                 Rule::expr => Self::parse_expr(primary.into_inner()),
                 _ => unreachable!(),
@@ -79,7 +71,7 @@ impl Expr {
     /// - attempt to perform modulo by zero.
     pub fn eval(&self, label_dictionary: &LabelDictionary, current_line: usize) -> Result<i32> {
         match self {
-            Self::Integer(i) => Ok(*i),
+            Self::Integer(number_string) => number_string.parse::<i32>().map_err(Into::into),
 
             Self::Label(label) => Self::find_offset(label, label_dictionary, current_line),
 

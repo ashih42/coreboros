@@ -1,0 +1,590 @@
+use egui_macroquad::egui;
+use macroquad::prelude::*;
+
+use crate::{
+    color,
+    config_manager::ConfigManager,
+    game::GameContext,
+    renderer::Renderer,
+    scene::{Scene, editor::text_editor::TextEditor, scene_change::SceneChange},
+    warrior::{Warrior, warrior_id::WarriorId},
+    warrior_queue::WarriorQueue,
+    warrior_vault::WarriorVault,
+};
+
+mod syntax_highlighter;
+mod syntax_kind;
+mod text_editor;
+
+pub struct Editor {
+    text_editor: TextEditor,
+    console_text: String,
+
+    current_warrior: Option<Warrior>,
+    warrior_queue: WarriorQueue,
+
+    next_scene: Option<SceneChange>,
+}
+
+impl Scene for Editor {
+    fn update(&mut self, game_ctx: &mut GameContext) -> Option<SceneChange> {
+        egui_macroquad::ui(|egui_ctx| {
+            self.draw_left_sidebar(egui_ctx, &game_ctx.renderer);
+            self.draw_right_sidebar(egui_ctx, game_ctx);
+            self.draw_bottom_console(egui_ctx);
+            self.draw_central_buttons(egui_ctx, &mut game_ctx.warrior_vault);
+            self.draw_central_redcode_editor(egui_ctx);
+        });
+        egui_macroquad::draw();
+
+        self.next_scene.take()
+    }
+}
+
+const LEFT_SIDEBAR_WIDTH: f32 = 200.0;
+const RIGHT_SIDEBAR_WIDTH: f32 = 300.0;
+
+impl Editor {
+    pub fn new(warrior_queue: WarriorQueue) -> Self {
+        Self {
+            text_editor: TextEditor::default(),
+            console_text: String::new(),
+
+            current_warrior: None,
+            warrior_queue,
+
+            next_scene: None,
+        }
+    }
+
+    fn draw_bottom_console(&mut self, egui_ctx: &egui::Context) {
+        let bottom_panel_height = screen_height() * 0.30;
+
+        egui::TopBottomPanel::bottom("bottom_console")
+            .exact_height(bottom_panel_height)
+            .resizable(false)
+            .show(egui_ctx, |ui| {
+                ui.add_space(4.0);
+                ui.heading("Console Logs");
+                ui.add_space(4.0);
+
+                egui::ScrollArea::vertical()
+                    .max_height(f32::INFINITY)
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.console_text)
+                                .min_size(ui.available_size())
+                                .desired_width(f32::INFINITY)
+                                .hint_text("Tip: Compile your warrior, and then load it to arena or save it to vault.")
+                                .interactive(false),
+                        );
+                    });
+            });
+    }
+
+    fn draw_central_buttons(&mut self, egui_ctx: &egui::Context, warrior_vault: &mut WarriorVault) {
+        let button_height = 24.0;
+
+        egui::TopBottomPanel::bottom("warrior_buttons_panel")
+            .resizable(false)
+            .show(egui_ctx, |ui| {
+                ui.add_space(5.0);
+
+                ui.horizontal(|ui| {
+                    let width = (ui.available_width() - 16.0) / 3.0;
+                    let height = button_height;
+
+                    self.add_button(
+                        ui,
+                        width,
+                        height,
+                        "Compile",
+                        self.current_warrior.is_none(),
+                        Self::compile,
+                    );
+
+                    self.add_button(
+                        ui,
+                        width,
+                        height,
+                        "Load",
+                        self.current_warrior.is_some() && !self.warrior_queue.is_full(),
+                        Self::copy_current_warrior_to_queue,
+                    );
+
+                    self.add_button(
+                        ui,
+                        width,
+                        height,
+                        "Save",
+                        self.current_warrior.is_some(),
+                        |editor| {
+                            editor.save_current_warrior_to_vault(warrior_vault);
+                        },
+                    );
+                });
+
+                ui.add_space(5.0);
+
+                if self.current_warrior.is_some() {
+                    ui.colored_label(egui::Color32::GREEN, "Warrior is ready!");
+                }
+
+                ui.add_space(5.0);
+            });
+    }
+
+    fn draw_central_redcode_editor(&mut self, egui_ctx: &egui::Context) {
+        egui::CentralPanel::default().show(egui_ctx, |ui| {
+            ui.heading("Redcode Editor");
+            ui.add_space(4.0);
+            ui.separator();
+            ui.add_space(4.0);
+
+            egui::ScrollArea::vertical()
+                .max_height(f32::INFINITY)
+                .show(ui, |ui| {
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                        ui.spacing_mut().item_spacing.x = 8.0;
+                        self.draw_line_numbers_col(ui);
+                        self.draw_text_editor(ui);
+                    });
+                });
+        });
+    }
+
+    fn draw_line_numbers_col(&self, ui: &mut egui::Ui) {
+        ui.vertical(|ui| {
+            ui.add_space(2.5);
+            ui.add(egui::Label::new(
+                egui::RichText::new(&self.text_editor.line_numbers_col).size(16.0),
+            ));
+        });
+    }
+
+    fn draw_text_editor(&mut self, ui: &mut egui::Ui) {
+        let mut apply_syntax_highlighting = |ui: &egui::Ui, redcode: &str, _wrap_width: f32| {
+            TextEditor::get_cached_or_build_new_galley(
+                ui,
+                redcode,
+                &mut self.text_editor.cached_input_text,
+                &mut self.text_editor.cached_galley,
+            )
+        };
+
+        let scroll_area_output = egui::ScrollArea::horizontal()
+            .auto_shrink(false)
+            .show(ui, |ui| {
+                ui.add(
+                    egui::TextEdit::multiline(&mut self.text_editor.input_text)
+                        .min_size(ui.available_size())
+                        .desired_width(f32::INFINITY)
+                        .layouter(&mut apply_syntax_highlighting),
+                )
+            });
+
+        if scroll_area_output.inner.changed() {
+            self.current_warrior = None;
+            self.text_editor.update_line_numbers_col_if_changed();
+        }
+    }
+
+    fn copy_current_warrior_to_queue(&mut self) {
+        if let Some(warrior) = &self.current_warrior {
+            self.warrior_queue.push_if_not_full(warrior.clone());
+        }
+    }
+
+    fn save_current_warrior_to_vault(&mut self, warrior_vault: &mut WarriorVault) {
+        if let Some(warrior) = &self.current_warrior {
+            warrior_vault.save_warrior(warrior);
+        }
+    }
+
+    fn enter_arena(&mut self) {
+        let warriors = std::mem::take(&mut self.warrior_queue);
+        self.next_scene = Some(SceneChange::to_arena(warriors));
+    }
+
+    fn compile(&mut self) {
+        match Warrior::from_text(&self.text_editor.input_text) {
+            Ok(warrior) => {
+                self.current_warrior = Some(warrior);
+                self.console_text.clear();
+            }
+            Err(err) => self.console_text = format!("{:?}", err),
+        }
+    }
+
+    /// Add a button with a condition to enable the button and a callback closure when clicked.
+    fn add_button<F>(
+        &mut self,
+        ui: &mut egui::Ui,
+        width: f32,
+        height: f32,
+        label: &str,
+        enabled: bool,
+        mut callback: F,
+    ) where
+        F: FnMut(&mut Self),
+    {
+        ui.add_enabled_ui(enabled, |ui| {
+            if ui
+                .add_sized([width, height], egui::Button::new(label))
+                .clicked()
+            {
+                callback(self);
+            }
+        });
+    }
+
+    fn draw_left_sidebar(&mut self, egui_ctx: &egui::Context, renderer: &Renderer) {
+        egui::SidePanel::left("left_navigation")
+            .exact_width(LEFT_SIDEBAR_WIDTH)
+            .resizable(false)
+            .show(egui_ctx, |ui| {
+                ui.heading("Arena");
+                ui.separator();
+
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+
+                    ui.label("Warriors (");
+                    ui.label(renderer.num_to_str(self.warrior_queue.len()));
+                    ui.label("/");
+                    ui.label(renderer.num_to_str(self.warrior_queue.get_capacity()));
+                    ui.label(")");
+                });
+
+                let button_width = ui.available_width();
+                let button_height = 24.0;
+
+                self.add_button(
+                    ui,
+                    button_width,
+                    button_height,
+                    "Enter Arena",
+                    self.warrior_queue.is_ready(),
+                    Self::enter_arena,
+                );
+
+                ui.separator();
+                ui.add_space(5.0);
+
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for index in 0..self.warrior_queue.len() {
+                        self.draw_queued_warrior_frame(index, ui, renderer);
+                        ui.add_space(20.0); // This is a hard-coded value to keep warrior widget frames from overlapping.
+                    }
+                });
+            });
+    }
+
+    /// Draw the queued warrior.
+    /// Define behaviors on clicking the frame or buttons created from `define_queued_warrior_frame_and_buttons`.
+    fn draw_queued_warrior_frame(&mut self, index: usize, ui: &mut egui::Ui, renderer: &Renderer) {
+        if let Some((
+            frame_response,
+            close_button_response,
+            move_up_button_response,
+            move_down_button_response,
+        )) = self.warrior_queue.get(index).map(|warrior| {
+            Self::define_queued_warrior_frame_and_buttons(warrior, index, ui, renderer)
+        }) {
+            if frame_response.clicked()
+                && let Some(warrior) = self.warrior_queue.get(index)
+            {
+                self.load_current_warrior(warrior.clone());
+            }
+
+            if close_button_response.clicked() {
+                self.warrior_queue.remove(index);
+            }
+
+            if move_up_button_response.clicked() {
+                self.warrior_queue.move_up(index);
+            }
+
+            if move_down_button_response.clicked() {
+                self.warrior_queue.move_down(index);
+            }
+        }
+    }
+
+    /// Draw a frame for the warrior, with buttons to close, move up, or move down this warrior in the queue.
+    /// Return the frame and 3 buttons.
+    fn define_queued_warrior_frame_and_buttons(
+        warrior: &Warrior,
+        warrior_id: WarriorId,
+        ui: &mut egui::Ui,
+        renderer: &Renderer,
+    ) -> (
+        egui::Response,
+        egui::Response,
+        egui::Response,
+        egui::Response,
+    ) {
+        let warrior_name = warrior.metadata.name.as_str();
+        let warrior_color = color::get_egui_color32(Some(warrior_id));
+        let num_instructions = warrior.instructions.len();
+
+        let frame = egui::Frame::group(ui.style())
+            .fill(egui::Color32::from_rgb(40, 40, 40))
+            .stroke(egui::Stroke::new(1.0, egui::Color32::GRAY))
+            .inner_margin(8.0)
+            .show(ui, |ui| {
+                ui.set_min_width(LEFT_SIDEBAR_WIDTH - 40.0);
+
+                ui.horizontal(|ui| {
+                    // Draw a colored square indicating this warrior's color.
+                    let (rect, _) =
+                        ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
+                    ui.painter().rect_filled(rect, 2.0, warrior_color);
+
+                    ui.add_space(4.0);
+
+                    // Draw "Warrior X".
+                    ui.colored_label(egui::Color32::WHITE, "Warrior");
+                    ui.colored_label(egui::Color32::WHITE, renderer.num_to_str(warrior_id));
+                });
+
+                ui.add_space(2.0);
+
+                // Draw the warrior's name in the warrior's color.
+                ui.label(
+                    egui::RichText::new(warrior_name)
+                        .size(20.0)
+                        .color(egui::Color32::WHITE), // .color(warrior_color),
+                );
+
+                ui.add_space(2.0);
+
+                // Draw number of instructions for this warrior.
+                ui.horizontal(|ui| {
+                    ui.label("Instructions:");
+                    ui.label(renderer.num_to_str(num_instructions));
+                });
+            });
+
+        // Prepare a response from clicking on the entire frame.
+        let frame_rect = frame.response.rect;
+        let frame_response =
+            ui.interact(frame_rect, egui::Id::new(warrior_id), egui::Sense::click());
+
+        // Prepare a response from clicking on the "X" button at top-right corner of frame.
+        let button_size = egui::vec2(18.0, 18.0);
+        let x_button_pos = egui::pos2(
+            frame_rect.max.x - (button_size.x / 2.0) - 15.0,
+            frame_rect.min.y - (button_size.y / 2.0) + 15.0,
+        );
+        let close_button_response = ui.put(
+            egui::Rect::from_min_size(x_button_pos, button_size),
+            egui::Button::new("❌").small().corner_radius(5),
+        );
+
+        let move_up_button_pos = egui::pos2(
+            frame_rect.max.x - (button_size.x / 2.0) - 15.0,
+            frame_rect.min.y - (button_size.y / 2.0) + 15.0 + 25.0,
+        );
+        let move_up_button_response = ui.put(
+            egui::Rect::from_min_size(move_up_button_pos, button_size),
+            egui::Button::new("🔼").small().corner_radius(5),
+        );
+
+        let move_down_button_pos = egui::pos2(
+            frame_rect.max.x - (button_size.x / 2.0) - 15.0,
+            frame_rect.min.y - (button_size.y / 2.0) + 15.0 + 25.0 * 2.0,
+        );
+        let move_down_button_response = ui.put(
+            egui::Rect::from_min_size(move_down_button_pos, button_size),
+            egui::Button::new("🔽").small().corner_radius(5),
+        );
+
+        (
+            frame_response,
+            close_button_response,
+            move_up_button_response,
+            move_down_button_response,
+        )
+    }
+
+    fn draw_right_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &mut GameContext) {
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        enum RightSidebarTab {
+            WarriorVault,
+            Config,
+        }
+
+        let tab_state_id = egui::Id::new("right_sidebar_tab_state");
+
+        egui::SidePanel::right("right_inspector")
+            .exact_width(RIGHT_SIDEBAR_WIDTH)
+            .resizable(false)
+            .show(egui_ctx, |ui| {
+                let current_tab = ui.data_mut(|d| {
+                    *d.get_persisted_mut_or_insert_with(tab_state_id, || {
+                        RightSidebarTab::WarriorVault
+                    })
+                });
+
+                // Draw a row of tabs.
+                ui.horizontal(|ui| {
+                    if ui
+                        .selectable_label(current_tab == RightSidebarTab::WarriorVault, "Warriors")
+                        .clicked()
+                    {
+                        ui.data_mut(|d| {
+                            d.insert_persisted(tab_state_id, RightSidebarTab::WarriorVault)
+                        });
+                    }
+
+                    if ui
+                        .selectable_label(current_tab == RightSidebarTab::Config, "Settings")
+                        .clicked()
+                    {
+                        ui.data_mut(|d| d.insert_persisted(tab_state_id, RightSidebarTab::Config));
+                    }
+                });
+
+                ui.separator();
+
+                // Draw content for the selected tab.
+                egui::ScrollArea::vertical().auto_shrink([false; 2]).show(
+                    ui,
+                    |ui| match current_tab {
+                        RightSidebarTab::WarriorVault => {
+                            self.draw_warrior_vault_page(
+                                ui,
+                                &game_ctx.renderer,
+                                &mut game_ctx.warrior_vault,
+                            );
+                        }
+                        RightSidebarTab::Config => {
+                            self.draw_config_page(
+                                ui,
+                                &game_ctx.renderer,
+                                &mut game_ctx.config_manager,
+                            );
+                        }
+                    },
+                );
+            });
+    }
+
+    fn load_current_warrior(&mut self, warrior: Warrior) {
+        self.text_editor.input_text = warrior.redcode.clone();
+        self.text_editor.update_line_numbers_col_if_changed();
+        self.current_warrior = Some(warrior);
+        self.console_text.clear();
+    }
+
+    fn draw_warrior_vault_page(
+        &mut self,
+        ui: &mut egui::Ui,
+        renderer: &Renderer,
+        warrior_vault: &mut WarriorVault,
+    ) {
+        ui.heading("Warrior Vault");
+        ui.separator();
+
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            egui::Grid::new("warrior_vault_table")
+                .num_columns(3)
+                .striped(true)
+                .spacing([25.0, 10.0])
+                .show(ui, |ui| {
+                    // Draw the header row.
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                        ui.set_min_width(140.0);
+                        ui.heading("Name");
+                    });
+                    ui.heading("Len");
+                    ui.heading("Del");
+                    ui.end_row();
+
+                    // Draw data rows.
+                    for index in 0..warrior_vault.len() {
+                        self.draw_warrior_vault_row(index, ui, renderer, warrior_vault);
+                    }
+                });
+        });
+    }
+
+    fn draw_warrior_vault_row(
+        &mut self,
+        index: usize,
+        ui: &mut egui::Ui,
+        renderer: &Renderer,
+        warrior_vault: &mut WarriorVault,
+    ) {
+        if let Some(warrior) = warrior_vault.get(index) {
+            if ui.selectable_label(false, &warrior.metadata.name).clicked() {
+                self.load_current_warrior(warrior.clone());
+            }
+
+            ui.allocate_ui_with_layout(
+                egui::vec2(50.0, ui.available_height()),
+                egui::Layout::centered_and_justified(egui::Direction::RightToLeft),
+                |ui| {
+                    ui.label(renderer.num_to_str(warrior.instructions.len()));
+                },
+            );
+
+            // 2. Add a red, small button for deletion
+            let button = egui::Button::new(egui::RichText::new("❌").size(12.0));
+
+            if ui.add(button).clicked() {
+                warrior_vault.remove(index);
+            }
+
+            ui.end_row();
+        }
+    }
+
+    fn draw_config_page(
+        &mut self,
+        ui: &mut egui::Ui,
+        renderer: &Renderer,
+        config_manager: &mut ConfigManager,
+    ) {
+        // println!("CALLING DRAW_CORE_SETTINGS");
+        // println!(
+        //     "config_manager.selected_core_dimension.as_str() = {}",
+        //     config_manager.selected_core_dimension.as_str()
+        // );
+
+        ui.heading("Settings");
+        ui.separator();
+
+        let full_width = ui.available_width();
+
+        ui.label("Choose a size:");
+
+        let combo_response = egui::ComboBox::from_id_salt("core_dimension_dropdown")
+            .selected_text(config_manager.selected_core_dimension.as_str())
+            .width(full_width) // Force the ComboBox button to stretch entirely
+            .show_ui(ui, |ui| {
+                for dimension in &config_manager.available_core_dimensions {
+                    ui.selectable_value(
+                        &mut config_manager.selected_core_dimension,
+                        *dimension,
+                        dimension.as_str(),
+                    );
+                }
+            });
+        // .response;
+        // let x = combo_response.inner;
+
+        // THIS DOESN'T TRIGGER, EVEN THOUGH THE SELECTED THING CHANGED!
+        if combo_response.response.changed() {
+            println!("CHANGED CORE SIZE");
+            // println!(
+            //     "Size changed to: {:?}",
+            //     config_manager.selected_core_dimension.as_str()
+            // );
+        } else {
+            // println!("no change");
+        }
+    }
+}

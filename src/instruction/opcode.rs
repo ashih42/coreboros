@@ -30,10 +30,16 @@ pub enum Opcode {
     STP, // save to p-space (saves a number to private storage space)
 
     NOP, // no operation (does nothing)
+}
 
-         // ORG,
-         // EQU,
-         // END,
+impl Opcode {
+    /// Check if this `Opcode` is an operation that writes to the core.
+    pub fn is_write(&self) -> bool {
+        matches!(
+            self,
+            Self::MOV | Self::ADD | Self::SUB | Self::MUL | Self::DIV | Self::MOD
+        )
+    }
 }
 
 // TODO: Update tests

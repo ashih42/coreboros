@@ -1,13 +1,14 @@
-pub mod comment_scanner;
-pub mod end_instruction_buffer;
-pub mod expr;
-pub mod expr_parser;
-pub mod instruction_builder;
-pub mod label_definition;
-pub mod label_dictionary;
-pub mod operand_buffer;
-pub mod org_instruction_buffer;
-pub mod redcode_line;
-pub mod redcode_parser;
-pub mod redcode_utils;
 pub mod warrior_builder;
+
+mod comment_scanner;
+mod end_instruction_buffer;
+mod expr;
+mod expr_parser;
+mod instruction_builder;
+mod label_definition;
+mod label_dictionary;
+mod operand_buffer;
+mod org_instruction_buffer;
+mod redcode_line;
+mod redcode_parser;
+mod redcode_utils;

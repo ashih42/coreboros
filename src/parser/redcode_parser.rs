@@ -265,7 +265,7 @@ mod tests {
         "#};
 
         let lines = parse_redcode(redcode).unwrap();
-        assert_eq!(lines.len(), 8);
+        assert_eq!(lines.len(), 9);
 
         assert!(matches!(
             lines[0],
@@ -351,6 +351,17 @@ mod tests {
                 label_definitions: Some(..),
                 instruction: Some(..),
                 comment: Some(..),
+                ..
+            }
+        ));
+
+        assert!(matches!(
+            lines[8],
+            RedcodeLine {
+                text_line_number: 9,
+                label_definitions: None,
+                instruction: None,
+                comment: None,
                 ..
             }
         ));

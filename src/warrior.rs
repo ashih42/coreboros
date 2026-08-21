@@ -2,13 +2,17 @@ use anyhow::Result;
 
 use crate::{
     instruction::Instruction, parser::warrior_builder::WarriorBuilder,
-    warrior_metadata::WarriorMetadata,
+    warrior::warrior_metadata::WarriorMetadata,
 };
 
-pub type WarriorId = u8;
+pub mod warrior_id;
+pub mod warrior_metadata;
 
+mod examples;
+
+#[derive(Clone)]
 pub struct Warrior {
-    // pub warrior_id: WarriorId, // maybe don't store it here, but store it in the hashmap mapping itself.
+    pub redcode: String,
     pub metadata: WarriorMetadata,
     pub instructions: Vec<Instruction>,
     pub origin: usize,
@@ -17,27 +21,33 @@ pub struct Warrior {
 impl Warrior {
     #[must_use]
     pub const fn new(
+        redcode: String,
         metadata: WarriorMetadata,
         instructions: Vec<Instruction>,
         origin: usize,
     ) -> Self {
         Self {
+            redcode,
             metadata,
             instructions,
             origin,
         }
     }
 
-    /// Try to construct a `Warrior` from input Redcode file at `filepath`.
+    pub fn from_text(redcode: &str) -> Result<Self> {
+        WarriorBuilder::from_text(redcode)
+    }
+
+    /// Try to construct a `Warrior` from input Redcode file at `path`.
     ///
     /// # Errors
     /// Will return `Err` if Warrior is cannot be constructed.
-    pub fn from_file(filepath: &str) -> Result<Self> {
-        WarriorBuilder::from_file(filepath)
+    pub fn from_file(path: &str) -> Result<Self> {
+        WarriorBuilder::from_file(path)
     }
 
     #[must_use]
-    pub fn to_load_file(&self) -> String {
+    pub fn as_load_file(&self) -> String {
         format!(
             ";redcode\n\
             ;name          {name}\n\
@@ -54,28 +64,9 @@ impl Warrior {
             instructions = self
                 .instructions
                 .iter()
-                .map(Instruction::to_load_file)
+                .map(Instruction::as_load_file)
                 .collect::<Vec<String>>()
                 .join("\n")
         )
-    }
-}
-
-impl Default for Warrior {
-    // for testing
-    fn default() -> Self {
-        let metadata = WarriorMetadata {
-            name: "Joe".to_owned(),
-            author: None,
-            // version: None,
-            // date: None,
-            strategy: None,
-        };
-        Self {
-            // warrior_id: 0,
-            metadata,
-            instructions: Vec::new(),
-            origin: 0,
-        }
     }
 }

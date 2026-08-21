@@ -1,6 +1,6 @@
 use std::{fmt, path::PathBuf};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct WarriorMetadata {
     pub name: String,
     pub author: Option<String>,
@@ -49,16 +49,4 @@ impl fmt::Display for WarriorMetadata {
 
         Ok(())
     }
-}
-
-#[test]
-fn test_display() {
-    let metadata = WarriorMetadata {
-        name: "Dwarf".to_owned(),
-        author: Some("A. K. Dewdney".to_owned()),
-        strategy: Some("Bombs every fourth instruction.".to_owned()),
-    };
-
-    println!("Say hello to my great warrior:\n{}", metadata);
-    println!("THE END");
 }
