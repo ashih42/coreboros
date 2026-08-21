@@ -21,11 +21,12 @@ use crate::{
 };
 
 pub struct Mars {
-    config: Config,
+    pub config: Config,
     pub core: Core,
     pub warrior_contexts: Vec<WarriorContext>,
     pub game_counter: usize,
     pub turn_counter: usize,
+    pub cycle_counter: usize,
     pub current_warrior_id: WarriorId,
     pub game_over: bool,
     pub winner: Option<WarriorId>,
@@ -69,6 +70,7 @@ impl Mars {
             core,
             game_counter: 0,
             turn_counter: 0,
+            cycle_counter: 0,
             current_warrior_id: 0,
             game_over: false,
             winner: None,
@@ -113,6 +115,7 @@ impl Mars {
         }
 
         self.turn_counter = 0;
+        self.cycle_counter = 0;
         self.current_warrior_id = 0;
         self.game_over = false;
         self.winner = None;
@@ -128,6 +131,8 @@ impl Mars {
             &mut self.warrior_contexts[self.current_warrior_id].task_queue,
             &mut self.core,
         );
+
+        self.cycle_counter += 1;
 
         if self.check_is_game_over() {
             self.set_game_over_and_determine_winner();
