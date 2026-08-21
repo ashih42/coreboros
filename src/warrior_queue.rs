@@ -20,9 +20,10 @@ where
     I: Iterator<Item = &'a Warrior>,
 {
     fn from(iter: I) -> Self {
-        Self {
-            warriors: iter.take(MAX_CAPACITY).cloned().collect(),
-        }
+        let mut warriors = Vec::with_capacity(MAX_CAPACITY);
+        warriors.extend(iter.take(MAX_CAPACITY).cloned());
+
+        Self { warriors }
     }
 }
 
