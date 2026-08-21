@@ -11,6 +11,6 @@ pub struct Config {
     pub core_initialization_strategy: CoreInitializationStrategy,
     pub task_queue_capacity: usize,
     //
-    pub cycles_before_tie: u32,
+    pub turn_limit: usize,
     // TODO: warrior_separation_strategy: WarriorSeparationStrategy
 }

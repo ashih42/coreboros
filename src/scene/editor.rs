@@ -607,5 +607,22 @@ impl Editor {
                     );
                 }
             });
+
+        ui.add_space(SPACE_BETWEEN_FEATURES);
+
+        ui.label("Turn Limit");
+
+        egui::ComboBox::from_id_salt("turn_limit_dropdown")
+            .selected_text(renderer.num_to_str(config_manager.selected_turn_limit))
+            .width(full_width) // Force the ComboBox button to stretch entirely
+            .show_ui(ui, |ui| {
+                for &limit in &config_manager.available_turn_limits {
+                    ui.selectable_value(
+                        &mut config_manager.selected_turn_limit,
+                        limit,
+                        renderer.num_to_str(limit),
+                    );
+                }
+            });
     }
 }

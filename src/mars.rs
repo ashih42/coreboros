@@ -24,8 +24,8 @@ pub struct Mars {
     config: Config,
     pub core: Core,
     pub warrior_contexts: Vec<WarriorContext>,
-    pub game_counter: u32,
-    pub cycle_counter: u32,
+    pub game_counter: usize,
+    pub turn_counter: usize,
     pub current_warrior_id: WarriorId,
     pub game_over: bool,
     pub winner: Option<WarriorId>,
@@ -68,7 +68,7 @@ impl Mars {
             warrior_contexts: contexts,
             core,
             game_counter: 0,
-            cycle_counter: 0,
+            turn_counter: 0,
             current_warrior_id: 0,
             game_over: false,
             winner: None,
@@ -112,7 +112,7 @@ impl Mars {
             self.game_counter += 1;
         }
 
-        self.cycle_counter = 0;
+        self.turn_counter = 0;
         self.current_warrior_id = 0;
         self.game_over = false;
         self.winner = None;
@@ -140,7 +140,7 @@ impl Mars {
     }
 
     /// Example: In a 4-player game with warriors [0, 1, 2, 3], if `current_warrior_id` is 1,
-    /// then we would try to find the next warrior alive at [2, 3], then advance cycle counter, then try to find next warrior alive at [0, 1].
+    /// then we would try to find the next warrior alive at [2, 3], then advance turn counter, then try to find next warrior alive at [0, 1].
     fn find_next_warrior_alive(&mut self) -> Option<WarriorId> {
         // Check first pass - from next player to last player.
         if let Some(warrior_id) = (self.current_warrior_id + 1..self.warrior_contexts.len())
@@ -149,9 +149,9 @@ impl Mars {
             return Some(warrior_id);
         }
 
-        // Advance the cycle counter, and check if this ends the game.
-        self.cycle_counter += 1;
-        if self.cycle_counter >= self.config.cycles_before_tie {
+        // Advance the turn counter, and check if this ends the game.
+        self.turn_counter += 1;
+        if self.turn_counter >= self.config.turn_limit {
             self.set_game_over_and_determine_winner();
             return None;
         }
@@ -177,8 +177,8 @@ impl Mars {
     }
 
     fn check_is_game_over(&self) -> bool {
-        // The game ends when `cycle_counter` reaches maximum value.
-        if self.cycle_counter >= self.config.cycles_before_tie {
+        // The game ends when `turn_counter` reaches maximum value.
+        if self.turn_counter >= self.config.turn_limit {
             return true;
         }
 

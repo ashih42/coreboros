@@ -11,6 +11,9 @@ pub struct ConfigManager {
 
     pub selected_task_queue_capacity: usize,
     pub available_task_queue_capacities: Vec<usize>,
+
+    pub selected_turn_limit: usize,
+    pub available_turn_limits: Vec<usize>,
 }
 
 impl Default for ConfigManager {
@@ -25,6 +28,9 @@ impl Default for ConfigManager {
         let selected_task_queue_capacity = 64;
         let available_task_queue_capacities = vec![1, 4, 16, 64, 128, 256];
 
+        let selected_turn_limit = 4_000;
+        let available_turn_limits = vec![40, 80, 400, 800, 4_000, 8_000, 40_000, 80_000];
+
         Self {
             selected_core_dimension,
             available_core_dimensions,
@@ -32,6 +38,8 @@ impl Default for ConfigManager {
             available_core_initialization_strategies,
             selected_task_queue_capacity,
             available_task_queue_capacities,
+            selected_turn_limit,
+            available_turn_limits,
         }
     }
 }
@@ -43,7 +51,7 @@ impl ConfigManager {
             core_initialization_strategy: self.selected_core_initialization_strategy,
             task_queue_capacity: self.selected_task_queue_capacity,
 
-            cycles_before_tie: 8_000,
+            turn_limit: self.selected_turn_limit,
         }
     }
 }

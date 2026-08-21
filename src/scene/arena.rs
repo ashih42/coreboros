@@ -373,8 +373,8 @@ impl Arena {
     fn draw_left_sidebar(&self, egui_ctx: &egui::Context, renderer: &Renderer) {
         const SUBHEADING_FONT_SIZE: f32 = 20.0;
 
-        let game_str = renderer.num_to_str(self.mars.game_counter as usize);
-        let cycle_str = renderer.num_to_str(self.mars.cycle_counter as usize);
+        let game_str = renderer.num_to_str(self.mars.game_counter);
+        let turn_str = renderer.num_to_str(self.mars.turn_counter);
 
         egui::SidePanel::left("left_sidebar")
             .exact_width(LEFT_SIDEBAR_WIDTH)
@@ -392,8 +392,8 @@ impl Arena {
                 ui.add_space(2.0);
 
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new("Cycle:").size(SUBHEADING_FONT_SIZE));
-                    ui.label(egui::RichText::new(cycle_str).size(SUBHEADING_FONT_SIZE));
+                    ui.label(egui::RichText::new("Turn:").size(SUBHEADING_FONT_SIZE));
+                    ui.label(egui::RichText::new(turn_str).size(SUBHEADING_FONT_SIZE));
                 });
 
                 ui.separator();
