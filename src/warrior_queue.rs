@@ -4,7 +4,7 @@ pub struct WarriorQueue {
     warriors: Vec<Warrior>,
 }
 
-pub const MAX_CAPACITY: usize = 4;
+pub const MAX_CAPACITY: usize = 8;
 
 impl Default for WarriorQueue {
     fn default() -> Self {
