@@ -129,7 +129,9 @@ impl Mars {
                 .sum::<usize>();
 
             let mut buckets = vec![self.config.min_distance_between_warriors; num_warriors];
-            let mut remaining_cells = self.core.size() - total_instructions;
+            let mut remaining_cells = self.core.size()
+                - total_instructions
+                - (self.config.min_distance_between_warriors * num_warriors);
 
             while remaining_cells != 0 {
                 let bucket_id = rand::random_range(0..num_warriors);
@@ -141,12 +143,12 @@ impl Mars {
         };
 
         let mut positions = Vec::with_capacity(num_warriors);
-        let mut index = 0;
+        let mut position = 0;
 
         for (instructions, separation) in instruction_lengths.iter().zip(separation_buckets.iter())
         {
-            positions.push(index);
-            index += instructions + separation;
+            positions.push(position);
+            position += instructions + separation;
         }
 
         positions
