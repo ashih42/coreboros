@@ -42,7 +42,7 @@ impl Scene for Editor {
     }
 }
 
-const LEFT_SIDEBAR_WIDTH: f32 = 200.0;
+const LEFT_SIDEBAR_WIDTH: f32 = 250.0;
 const RIGHT_SIDEBAR_WIDTH: f32 = 300.0;
 
 impl Editor {
