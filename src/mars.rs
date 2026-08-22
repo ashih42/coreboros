@@ -14,16 +14,17 @@ use crate::{
 };
 
 pub mod address;
-mod cell_slot_author;
 pub mod config;
-pub mod core;
-pub mod core_cell;
-pub mod instruction_cache;
+
+mod cell_slot_author;
+mod core;
+mod core_cell;
+mod instruction_cache;
 mod math_executor;
 mod opcode_executor;
 mod task_outcome;
-pub mod task_queue;
-pub mod warrior_context;
+mod task_queue;
+mod warrior_context;
 
 pub struct Mars {
     pub config: Config,
