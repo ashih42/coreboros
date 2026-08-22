@@ -25,7 +25,7 @@ impl CoreDimension {
     #[inline]
     pub const fn as_str(&self) -> &str {
         match self {
-            Self::Pico => "Nano (5 x 4)",
+            Self::Pico => "Pico (5 x 4)",
             Self::Nano => "Nano (10 x 8)",
             Self::Micro => "Micro  (20 x 16)",
             Self::Mini => "Mini (40 x 32)",
