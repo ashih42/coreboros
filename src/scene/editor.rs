@@ -38,6 +38,8 @@ impl Scene for Editor {
         });
         egui_macroquad::draw();
 
+        self.process_keyboard_events();
+
         self.next_scene.take()
     }
 }
@@ -55,6 +57,13 @@ impl Editor {
             warrior_queue,
 
             next_scene: None,
+        }
+    }
+
+    /// Process keyboard events.
+    fn process_keyboard_events(&mut self) {
+        if is_key_pressed(KeyCode::L) {
+            self.copy_current_warrior_to_queue();
         }
     }
 
