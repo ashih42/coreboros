@@ -6,8 +6,6 @@ use coreboros::warrior::Warrior;
 /// constructs a valid `Warrior`, and prints it in Load File format to stdout.
 /// Reference: <https://corewar.co.uk/standards/icws94.htm#3.0>
 fn main() {
-    env_logger::init();
-
     let args: Vec<String> = env::args().skip(1).collect();
 
     if args.len() != 1 {

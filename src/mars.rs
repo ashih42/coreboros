@@ -1,5 +1,3 @@
-use macroquad::prelude::info;
-
 use crate::{
     instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
     mars::{
@@ -42,12 +40,6 @@ pub struct Mars {
 impl Mars {
     /// Note: `ConfigManager` has validated these `warriors` can fit on the core with the given `config`.
     pub fn new(warriors: Vec<Warrior>, config: Config) -> Self {
-        // Can only have 1 to 4 players.
-        // assert!(
-        //     (1..=4).contains(&warriors.len()),
-        //     "There should only be 1-4 players."
-        // );
-
         let (core_width, core_height) = config.core_dimension.as_grid_dimensions();
 
         let core = Core::new(core_width, core_height, config.core_initialization_strategy);
@@ -259,7 +251,7 @@ impl Mars {
         if let Some(address) = task_queue.pop() {
             let instruction = core.get_cell(address).instruction; // Cache the current instruction to be executed.
 
-            // info!(
+            // macroquad::prelude::info!(
             //     "Warrior {} executes at address {:>4}:\t{}\t{}\t{}",
             //     warrior_id, address, &instruction.operation, &instruction.a, &instruction.b
             // );
