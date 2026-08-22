@@ -194,12 +194,14 @@ impl Editor {
     fn copy_current_warrior_to_queue(&mut self) {
         if let Some(warrior) = &self.current_warrior {
             self.warrior_queue.push_if_not_full(warrior.clone());
+            self.console_text = format!("Added \"{}\" to queue.", warrior.metadata.name);
         }
     }
 
     fn save_current_warrior_to_vault(&mut self, warrior_vault: &mut WarriorVault) {
         if let Some(warrior) = &self.current_warrior {
             warrior_vault.save_warrior(warrior);
+            self.console_text = format!("Saved \"{}\" to vault.", warrior.metadata.name);
         }
     }
 
@@ -211,8 +213,8 @@ impl Editor {
     fn compile(&mut self) {
         match Warrior::from_text(&self.text_editor.input_text) {
             Ok(warrior) => {
+                self.console_text = format!("Compiled \"{}\" successfully.", warrior.metadata.name);
                 self.current_warrior = Some(warrior);
-                self.console_text.clear();
             }
             Err(err) => self.console_text = format!("{:?}", err),
         }
