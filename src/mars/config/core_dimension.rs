@@ -10,8 +10,8 @@ pub enum CoreDimension {
 }
 
 impl CoreDimension {
-    pub fn list_all_values() -> Vec<Self> {
-        vec![
+    pub fn list_all_values() -> Box<[Self]> {
+        Box::new([
             Self::Pico,
             Self::Nano,
             Self::Micro,
@@ -19,7 +19,7 @@ impl CoreDimension {
             Self::Small,
             Self::Medium,
             Self::Large,
-        ]
+        ])
     }
 
     #[inline]

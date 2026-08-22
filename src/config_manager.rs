@@ -9,22 +9,22 @@ use crate::{
 
 pub struct ConfigManager {
     pub selected_core_dimension: CoreDimension,
-    pub available_core_dimensions: Vec<CoreDimension>,
+    pub available_core_dimensions: Box<[CoreDimension]>,
 
     pub selected_core_initialization_strategy: CoreInitializationStrategy,
-    pub available_core_initialization_strategies: Vec<CoreInitializationStrategy>,
+    pub available_core_initialization_strategies: Box<[CoreInitializationStrategy]>,
 
     pub selected_task_queue_capacity: usize,
-    pub available_task_queue_capacities: Vec<usize>,
+    pub available_task_queue_capacities: Box<[usize]>,
 
     pub selected_turn_limit: usize,
-    pub available_turn_limits: Vec<usize>,
+    pub available_turn_limits: Box<[usize]>,
 
     pub selected_warrior_separation_strategy: WarriorSeparationStrategy,
-    pub available_warrior_separation_strategies: Vec<WarriorSeparationStrategy>,
+    pub available_warrior_separation_strategies: Box<[WarriorSeparationStrategy]>,
 
     pub selected_min_distance_between_warriors: usize,
-    pub available_min_distance_between_warriors: Vec<usize>,
+    pub available_min_distance_between_warriors: Box<[usize]>,
 }
 
 impl Default for ConfigManager {
@@ -37,16 +37,16 @@ impl Default for ConfigManager {
             CoreInitializationStrategy::list_all_values();
 
         let selected_task_queue_capacity = 64;
-        let available_task_queue_capacities = vec![1, 4, 16, 64, 128, 256];
+        let available_task_queue_capacities = Box::new([1, 4, 16, 64, 128, 256]);
 
         let selected_turn_limit = 4_000;
-        let available_turn_limits = vec![40, 80, 400, 800, 4_000, 8_000, 40_000, 80_000];
+        let available_turn_limits = Box::new([40, 80, 400, 800, 4_000, 8_000, 40_000, 80_000]);
 
         let selected_warrior_separation_strategy = WarriorSeparationStrategy::Random;
         let available_warrior_separation_strategies = WarriorSeparationStrategy::list_all_values();
 
         let selected_min_distance_between_warriors = 10;
-        let available_min_distance_between_warriors = vec![0, 10, 20, 30, 40];
+        let available_min_distance_between_warriors = Box::new([0, 10, 20, 30, 40]);
 
         Self {
             selected_core_dimension,
@@ -104,7 +104,7 @@ impl ConfigManager {
                 
                 These {} warriors together have {total_instructions} instructions,
                 and we need at least {total_separation_distance} cells between them,
-                so the required core size is {required_size} cells.
+                so the required core size is at least {required_size} cells.
 
                 But the current core only has {available_size} cells.",
                 warrior_queue.len()

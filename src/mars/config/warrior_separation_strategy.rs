@@ -5,8 +5,8 @@ pub enum WarriorSeparationStrategy {
 }
 
 impl WarriorSeparationStrategy {
-    pub fn list_all_values() -> Vec<Self> {
-        vec![Self::Equal, Self::Random]
+    pub fn list_all_values() -> Box<[Self]> {
+        Box::new([Self::Equal, Self::Random])
     }
 
     #[inline]

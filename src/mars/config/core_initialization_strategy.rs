@@ -6,8 +6,8 @@ pub enum CoreInitializationStrategy {
 }
 
 impl CoreInitializationStrategy {
-    pub fn list_all_values() -> Vec<Self> {
-        vec![Self::FillDat00, Self::Leftover, Self::Random]
+    pub fn list_all_values() -> Box<[Self]> {
+        Box::new([Self::FillDat00, Self::Leftover, Self::Random])
     }
 
     #[inline]
