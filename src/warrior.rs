@@ -48,15 +48,16 @@ impl Warrior {
 
     #[must_use]
     pub fn as_load_file(&self) -> String {
-        format!(
-            ";redcode\n\
-            ;name          {name}\n\
-            ;author        {author}\n\
-            ;strategy      {strategy}\n\
-            \n\
-            org            {origin}\n\
-            \n\
-            {instructions}\n",
+        indoc::formatdoc! {"
+            ;redcode
+            ;name          {name}
+            ;author        {author}
+            ;strategy      {strategy}
+            
+            org            {origin}
+            
+            {instructions}
+            ",
             name = self.metadata.name,
             author = self.metadata.author.as_deref().unwrap_or_default(),
             strategy = self.metadata.strategy.as_deref().unwrap_or_default(),
@@ -67,6 +68,6 @@ impl Warrior {
                 .map(Instruction::as_load_file)
                 .collect::<Vec<String>>()
                 .join("\n")
-        )
+        }
     }
 }
