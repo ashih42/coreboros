@@ -508,7 +508,7 @@ impl Arena {
 
                     // Draw "Warrior X".
                     ui.colored_label(egui::Color32::WHITE, "Warrior");
-                    ui.colored_label(egui::Color32::WHITE, renderer.num_to_str(warrior_id));
+                    ui.colored_label(egui::Color32::WHITE, renderer.num_to_str(warrior_id + 1));
                 });
 
                 ui.add_space(2.0);

@@ -58,14 +58,14 @@ impl TextureManager {
 
     pub fn get_warrior_icon(&self, warrior_id: WarriorId) -> Option<&egui::TextureHandle> {
         match warrior_id {
-            0 => self.digit_0.as_ref(),
-            1 => self.digit_1.as_ref(),
-            2 => self.digit_2.as_ref(),
-            3 => self.digit_3.as_ref(),
-            4 => self.digit_4.as_ref(),
-            5 => self.digit_5.as_ref(),
-            6 => self.digit_6.as_ref(),
-            7 => self.digit_7.as_ref(),
+            0 => self.digit_1.as_ref(),
+            1 => self.digit_2.as_ref(),
+            2 => self.digit_3.as_ref(),
+            3 => self.digit_4.as_ref(),
+            4 => self.digit_5.as_ref(),
+            5 => self.digit_6.as_ref(),
+            6 => self.digit_7.as_ref(),
+            7 => self.digit_8.as_ref(),
             _ => None,
         }
     }
