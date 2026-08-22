@@ -5,6 +5,7 @@ use crate::{
     color,
     config_manager::ConfigManager,
     game::GameContext,
+    mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     renderer::Renderer,
     scene::{Scene, editor::text_editor::TextEditor, scene_change::SceneChange},
     warrior::{Warrior, warrior_id::WarriorId},
@@ -29,7 +30,7 @@ pub struct Editor {
 impl Scene for Editor {
     fn update(&mut self, game_ctx: &mut GameContext) -> Option<SceneChange> {
         egui_macroquad::ui(|egui_ctx| {
-            self.draw_left_sidebar(egui_ctx, &game_ctx.renderer);
+            self.draw_left_sidebar(egui_ctx, game_ctx);
             self.draw_right_sidebar(egui_ctx, game_ctx);
             self.draw_bottom_console(egui_ctx);
             self.draw_central_buttons(egui_ctx, &mut game_ctx.warrior_vault);
@@ -239,7 +240,7 @@ impl Editor {
         });
     }
 
-    fn draw_left_sidebar(&mut self, egui_ctx: &egui::Context, renderer: &Renderer) {
+    fn draw_left_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &mut GameContext) {
         egui::SidePanel::left("left_navigation")
             .exact_width(LEFT_SIDEBAR_WIDTH)
             .resizable(false)
@@ -251,9 +252,13 @@ impl Editor {
                     ui.spacing_mut().item_spacing.x = 0.0;
 
                     ui.label("Warriors (");
-                    ui.label(renderer.num_to_str(self.warrior_queue.len()));
+                    ui.label(game_ctx.renderer.num_to_str(self.warrior_queue.len()));
                     ui.label("/");
-                    ui.label(renderer.num_to_str(self.warrior_queue.get_capacity()));
+                    ui.label(
+                        game_ctx
+                            .renderer
+                            .num_to_str(self.warrior_queue.get_capacity()),
+                    );
                     ui.label(")");
                 });
 
@@ -266,7 +271,13 @@ impl Editor {
                     button_height,
                     "Enter Arena",
                     self.warrior_queue.is_ready(),
-                    Self::enter_arena,
+                    |editor| match game_ctx
+                        .config_manager
+                        .validate_entry(&editor.warrior_queue)
+                    {
+                        Ok(()) => editor.enter_arena(),
+                        Err(err_message) => editor.console_text = err_message,
+                    },
                 );
 
                 ui.separator();
@@ -274,7 +285,7 @@ impl Editor {
 
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for index in 0..self.warrior_queue.len() {
-                        self.draw_queued_warrior_frame(index, ui, renderer);
+                        self.draw_queued_warrior_frame(index, ui, &game_ctx.renderer);
                         ui.add_space(20.0); // This is a hard-coded value to keep warrior widget frames from overlapping.
                     }
                 });
@@ -624,5 +635,47 @@ impl Editor {
                     );
                 }
             });
+
+        ui.add_space(SPACE_BETWEEN_FEATURES);
+
+        ui.label("Warrior Separation Strategy");
+
+        egui::ComboBox::from_id_salt("warrior_separation_strategy_dropdown")
+            .selected_text(config_manager.selected_warrior_separation_strategy.as_str())
+            .width(full_width) // Force the ComboBox button to stretch entirely
+            .show_ui(ui, |ui| {
+                for strategy in &config_manager.available_warrior_separation_strategies {
+                    ui.selectable_value(
+                        &mut config_manager.selected_warrior_separation_strategy,
+                        *strategy,
+                        strategy.as_str(),
+                    );
+                }
+            });
+
+        ui.add_space(SPACE_BETWEEN_FEATURES);
+
+        ui.add_enabled_ui(
+            config_manager.selected_warrior_separation_strategy
+                == WarriorSeparationStrategy::Random,
+            |ui| {
+                ui.label("Minimum Distance between Warriors");
+
+                egui::ComboBox::from_id_salt("min_distance_between_warriors_dropdown")
+                    .selected_text(
+                        renderer.num_to_str(config_manager.selected_min_distance_between_warriors),
+                    )
+                    .width(full_width) // Force the ComboBox button to stretch entirely
+                    .show_ui(ui, |ui| {
+                        for &distances in &config_manager.available_min_distance_between_warriors {
+                            ui.selectable_value(
+                                &mut config_manager.selected_min_distance_between_warriors,
+                                distances,
+                                renderer.num_to_str(distances),
+                            );
+                        }
+                    });
+            },
+        );
     }
 }

@@ -1,5 +1,10 @@
-use crate::mars::config::{
-    Config, core_dimension::CoreDimension, core_initialization_strategy::CoreInitializationStrategy,
+use crate::{
+    mars::config::{
+        Config, core_dimension::CoreDimension,
+        core_initialization_strategy::CoreInitializationStrategy,
+        warrior_separation_strategy::WarriorSeparationStrategy,
+    },
+    warrior_queue::WarriorQueue,
 };
 
 pub struct ConfigManager {
@@ -14,6 +19,12 @@ pub struct ConfigManager {
 
     pub selected_turn_limit: usize,
     pub available_turn_limits: Vec<usize>,
+
+    pub selected_warrior_separation_strategy: WarriorSeparationStrategy,
+    pub available_warrior_separation_strategies: Vec<WarriorSeparationStrategy>,
+
+    pub selected_min_distance_between_warriors: usize,
+    pub available_min_distance_between_warriors: Vec<usize>,
 }
 
 impl Default for ConfigManager {
@@ -31,6 +42,12 @@ impl Default for ConfigManager {
         let selected_turn_limit = 4_000;
         let available_turn_limits = vec![40, 80, 400, 800, 4_000, 8_000, 40_000, 80_000];
 
+        let selected_warrior_separation_strategy = WarriorSeparationStrategy::Random;
+        let available_warrior_separation_strategies = WarriorSeparationStrategy::list_all_values();
+
+        let selected_min_distance_between_warriors = 10;
+        let available_min_distance_between_warriors = vec![0, 10, 20, 30, 40];
+
         Self {
             selected_core_dimension,
             available_core_dimensions,
@@ -40,6 +57,10 @@ impl Default for ConfigManager {
             available_task_queue_capacities,
             selected_turn_limit,
             available_turn_limits,
+            selected_warrior_separation_strategy,
+            available_warrior_separation_strategies,
+            selected_min_distance_between_warriors,
+            available_min_distance_between_warriors,
         }
     }
 }
@@ -50,8 +71,44 @@ impl ConfigManager {
             core_dimension: self.selected_core_dimension,
             core_initialization_strategy: self.selected_core_initialization_strategy,
             task_queue_capacity: self.selected_task_queue_capacity,
-
             turn_limit: self.selected_turn_limit,
+            warrior_separation_strategy: self.selected_warrior_separation_strategy,
+            min_distance_between_warriors: self.selected_min_distance_between_warriors,
+        }
+    }
+
+    pub fn validate_entry(&self, warrior_queue: &WarriorQueue) -> Result<(), String> {
+        let total_instructions = warrior_queue
+            .iter()
+            .map(|warrior| warrior.instructions.len())
+            .sum::<usize>();
+
+        let total_separation_distance = match warrior_queue.len() {
+            1 => 0,
+            _ => match self.selected_warrior_separation_strategy {
+                WarriorSeparationStrategy::Equal => 0,
+                WarriorSeparationStrategy::Random => {
+                    self.selected_min_distance_between_warriors * warrior_queue.len()
+                }
+            },
+        };
+
+        let required_size = total_instructions + total_separation_distance;
+        let available_size = self.selected_core_dimension.as_size();
+
+        if required_size <= available_size {
+            Ok(())
+        } else {
+            Err(indoc::formatdoc!(
+                "Error: Not enough space in core for warriors.
+                
+                These {} warriors together have {total_instructions} instructions,
+                and we need at least {total_separation_distance} cells between them,
+                so the required core size is {required_size} cells.
+
+                But the current core only has {available_size} cells.",
+                warrior_queue.len()
+            ))
         }
     }
 }

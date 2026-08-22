@@ -1,3 +1,20 @@
+use macroquad::prelude::info;
+// use rand::seq::IndexedRandom as _;
+
+use crate::{
+    instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
+    mars::{
+        address::Address,
+        config::{Config, warrior_separation_strategy::WarriorSeparationStrategy},
+        core::Core,
+        opcode_executor::*,
+        task_outcome::TaskOutcome,
+        task_queue::TaskQueue,
+        warrior_context::WarriorContext,
+    },
+    warrior::{Warrior, warrior_id::WarriorId},
+};
+
 pub mod address;
 pub mod config;
 pub mod core;
@@ -8,17 +25,6 @@ mod opcode_executor;
 mod task_outcome;
 pub mod task_queue;
 pub mod warrior_context;
-
-use macroquad::prelude::info;
-
-use crate::{
-    instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
-    mars::{
-        address::Address, config::Config, core::Core, opcode_executor::*,
-        task_outcome::TaskOutcome, task_queue::TaskQueue, warrior_context::WarriorContext,
-    },
-    warrior::{Warrior, warrior_id::WarriorId},
-};
 
 pub struct Mars {
     pub config: Config,
@@ -33,23 +39,14 @@ pub struct Mars {
 }
 
 impl Mars {
+    /// Note: `ConfigManager` has validated these `warriors` can fit on the core with the given `config`.
     pub fn new(warriors: Vec<Warrior>, config: Config) -> Self {
-        // let config = RuntimeConfig::new_icws86(); // THIS IS BASICALLY NOT USED RIGHT NOW
-
         // Can only have 1 to 4 players.
-        assert!(
-            (1..=4).contains(&warriors.len()),
-            "There should only be 1-4 players."
-        );
+        // assert!(
+        //     (1..=4).contains(&warriors.len()),
+        //     "There should only be 1-4 players."
+        // );
 
-        // const CORE_INITIALIZATION_STRATEGY: CoreInitializationStrategy =
-        //     CoreInitializationStrategy::FillDat00;
-
-        // const MAX_NUMBER_OF_TASKS: usize = 10;
-
-        // TEMPORARY OVERRIDE always make a small core.
-        // const CORE_WIDTH: usize = 10;
-        // const CORE_HEIGHT: usize = 8;
         let (core_width, core_height) = config.core_dimension.as_grid_dimensions();
 
         let core = Core::new(core_width, core_height, config.core_initialization_strategy);
@@ -81,12 +78,10 @@ impl Mars {
     }
 
     fn load_warriors_to_core_and_initialize_task_queues(&mut self) {
-        let num_warriors = self.warrior_contexts.len();
+        let starting_positions = self.determine_starting_positions();
 
         for (warrior_id, context) in self.warrior_contexts.iter_mut().enumerate() {
-            // HARDCODED always even division.
-            // TODO: Apply randomoization to starting position, under constraint of `config.minimum_separation`.
-            let starting_position = self.core.size() / num_warriors * warrior_id;
+            let starting_position = starting_positions[warrior_id];
 
             // Copy instructions to core.
             for (i, instruction) in context.warrior.instructions.iter().enumerate() {
@@ -100,6 +95,61 @@ impl Mars {
             let task = (starting_position + context.warrior.origin) % self.core.size();
             context.task_queue.push_if_not_full(task);
         }
+    }
+
+    fn determine_starting_positions(&self) -> Vec<usize> {
+        match self.config.warrior_separation_strategy {
+            WarriorSeparationStrategy::Equal => self.determine_starting_positions_equal(),
+            WarriorSeparationStrategy::Random => self.determine_starting_positions_random(),
+        }
+    }
+
+    fn determine_starting_positions_equal(&self) -> Vec<usize> {
+        let num_warriors = self.warrior_contexts.len();
+
+        (0..num_warriors)
+            .map(|warrior_id| self.core.size() / num_warriors * warrior_id)
+            .collect()
+    }
+
+    fn determine_starting_positions_random(&self) -> Vec<usize> {
+        let num_warriors = self.warrior_contexts.len();
+
+        let instruction_lengths = self
+            .warrior_contexts
+            .iter()
+            .map(|context| context.warrior.instructions.len())
+            .collect::<Vec<_>>();
+
+        let separation_buckets = {
+            let total_instructions = self
+                .warrior_contexts
+                .iter()
+                .map(|context| context.warrior.instructions.len())
+                .sum::<usize>();
+
+            let mut buckets = vec![self.config.min_distance_between_warriors; num_warriors];
+            let mut remaining_cells = self.core.size() - total_instructions;
+
+            while remaining_cells != 0 {
+                let bucket_id = rand::random_range(0..num_warriors);
+                buckets[bucket_id] += 1;
+                remaining_cells -= 1;
+            }
+
+            buckets
+        };
+
+        let mut positions = Vec::with_capacity(num_warriors);
+        let mut index = 0;
+
+        for (instructions, separation) in instruction_lengths.iter().zip(separation_buckets.iter())
+        {
+            positions.push(index);
+            index += instructions + separation;
+        }
+
+        positions
     }
 
     pub fn reset(&mut self, loading_next_game: bool) {

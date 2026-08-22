@@ -1,5 +1,6 @@
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CoreDimension {
+    Pico,
     Nano,
     Micro,
     Mini,
@@ -11,6 +12,7 @@ pub enum CoreDimension {
 impl CoreDimension {
     pub fn list_all_values() -> Vec<Self> {
         vec![
+            Self::Pico,
             Self::Nano,
             Self::Micro,
             Self::Mini,
@@ -23,6 +25,7 @@ impl CoreDimension {
     #[inline]
     pub const fn as_str(&self) -> &str {
         match self {
+            Self::Pico => "Nano (5 x 4)",
             Self::Nano => "Nano (10 x 8)",
             Self::Micro => "Micro  (20 x 16)",
             Self::Mini => "Mini (40 x 32)",
@@ -42,6 +45,7 @@ impl CoreDimension {
     #[inline]
     pub const fn as_grid_dimensions(&self) -> (usize, usize) {
         match self {
+            Self::Pico => (5, 4),
             Self::Nano => (10, 8),
             Self::Micro => (20, 16),
             Self::Mini => (40, 32),
