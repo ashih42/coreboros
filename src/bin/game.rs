@@ -1,9 +1,11 @@
 use macroquad::window::Conf;
 
-use coreboros::game::Game;
+use coreboros::{game::Game, rng};
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    rng::init_rng();
+
     let mut game = Game::default();
 
     game.run().await;

@@ -1,8 +1,11 @@
 use std::fmt;
 
-use crate::instruction::{
-    addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode, operand::Operand,
-    operation::Operation,
+use crate::{
+    instruction::{
+        addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode, operand::Operand,
+        operation::Operation,
+    },
+    rng,
 };
 
 pub mod addressing_mode;
@@ -62,10 +65,10 @@ impl Instruction {
         let modifier = Modifier::random_modifier();
 
         let a_mode = AddressingMode::random_addressing_mode();
-        let a_number = rand::random_range(0..core_size) as i32;
+        let a_number = rng::rand_range(0, core_size) as i32;
 
         let b_mode = AddressingMode::random_addressing_mode();
-        let b_number = rand::random_range(0..core_size) as i32;
+        let b_number = rng::rand_range(0, core_size) as i32;
 
         Self {
             operation: Operation::new(opcode, modifier),

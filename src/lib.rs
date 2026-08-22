@@ -1,4 +1,5 @@
 pub mod game;
+pub mod rng;
 pub mod scene;
 pub mod warrior;
 

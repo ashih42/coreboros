@@ -1,5 +1,6 @@
-use rand::seq::IndexedRandom as _;
 use std::str::FromStr;
+
+use crate::rng;
 
 // Note: Most enums in this codebase use `strum` to derive to_string() and from_str(),
 // but `strum` cannot be used here to here handle string "}".
@@ -52,10 +53,9 @@ impl AddressingMode {
             AddressingMode::BIndirectPostIncrement,
         ];
 
-        #[allow(clippy::expect_used, reason = "ALL_ADDRESSING_MODES is non-empty 👌")]
-        ALL_ADDRESSING_MODES.choose(&mut rand::rng()).copied().expect(
-            "There should be at least one element in `ALL_ADDRESSING_MODES` to randomly choose from",
-        )
+        let index = rng::rand_range(0, ALL_ADDRESSING_MODES.len());
+
+        ALL_ADDRESSING_MODES[index]
     }
 }
 

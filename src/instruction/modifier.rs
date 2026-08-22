@@ -1,5 +1,6 @@
-use rand::seq::IndexedRandom as _;
 use strum_macros::{Display, EnumString};
+
+use crate::rng;
 
 #[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
 #[strum(ascii_case_insensitive)]
@@ -25,10 +26,9 @@ impl Modifier {
             Modifier::I,
         ];
 
-        #[allow(clippy::expect_used, reason = "ALL_MODIFIERS is non-empty 👌")]
-        ALL_MODIFIERS.choose(&mut rand::rng()).copied().expect(
-            "There should be at least one element in `ALL_MODIFIERS` to randomly choose from",
-        )
+        let index = rng::rand_range(0, ALL_MODIFIERS.len());
+
+        ALL_MODIFIERS[index]
     }
 }
 

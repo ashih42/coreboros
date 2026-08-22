@@ -1,5 +1,6 @@
-use rand::seq::IndexedRandom as _;
 use strum_macros::{Display, EnumString};
+
+use crate::rng;
 
 // Reference: <https://corewars.org/docs/guide.html>
 #[allow(
@@ -69,15 +70,11 @@ impl Opcode {
             Opcode::NOP,
         ];
 
-        #[allow(clippy::expect_used, reason = "ALL_OPCODES is non-empty 👌")]
-        ALL_OPCODES
-            .choose(&mut rand::rng())
-            .copied()
-            .expect("There should be at least one element in `ALL_OPCODES` to randomly choose from")
+        let index = rng::rand_range(0, ALL_OPCODES.len());
+
+        ALL_OPCODES[index]
     }
 }
-
-// TODO: Update tests
 
 #[cfg(test)]
 mod tests {

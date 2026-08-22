@@ -1,5 +1,4 @@
 use macroquad::prelude::info;
-// use rand::seq::IndexedRandom as _;
 
 use crate::{
     instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
@@ -12,6 +11,7 @@ use crate::{
         task_queue::TaskQueue,
         warrior_context::WarriorContext,
     },
+    rng,
     warrior::{Warrior, warrior_id::WarriorId},
 };
 
@@ -135,7 +135,7 @@ impl Mars {
                 - (self.config.min_distance_between_warriors * num_warriors);
 
             while remaining_cells != 0 {
-                let bucket_id = rand::random_range(0..num_warriors);
+                let bucket_id = rng::rand_range(0, num_warriors);
                 buckets[bucket_id] += 1;
                 remaining_cells -= 1;
             }
