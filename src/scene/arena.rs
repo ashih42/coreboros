@@ -306,7 +306,7 @@ impl Arena {
                 if cell.instruction.operation.opcode == Opcode::DAT
                     && cell.operation_author.is_some()
                 {
-                    draw_line(x, y, x + cell_width, y + cell_height, 1.0, WHITE);
+                    draw_line(x, y, x + cell_width, y + cell_height, 1.5, WHITE);
                 }
             }
         }
