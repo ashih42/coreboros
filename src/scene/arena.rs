@@ -288,7 +288,7 @@ impl Arena {
                 let address = self.get_address(x, y);
 
                 let cell = self.mars.core.get_cell_with_wraparound(address);
-                let cell_color = color::get_mq_color(cell.operation_author);
+                let cell_color = color::get_mq_color(cell.operation_author.into());
 
                 let x = (x as f32) * cell_width;
                 let y = (y as f32) * cell_height;
@@ -666,7 +666,7 @@ impl Arena {
                     // Draw a slot showing the operation (opcode and modifier).
                     Self::draw_slot(
                         &cell.instruction_cache.operation,
-                        color::get_egui_color32(cell.operation_author),
+                        color::get_egui_color32(cell.operation_author.into()),
                         slot_width,
                         ui,
                     );
@@ -674,9 +674,9 @@ impl Arena {
                     // Draw a slot showing the A operand (mode and number).
                     Self::draw_operand_slot(
                         cell.instruction.a.mode.as_ref(),
-                        color::get_egui_color32(cell.operation_author),
+                        color::get_egui_color32(cell.operation_author.into()),
                         &cell.instruction_cache.a,
-                        color::get_egui_color32(cell.a_author),
+                        color::get_egui_color32(cell.a_author.into()),
                         slot_width - 10.0,
                         ui,
                     );
@@ -684,9 +684,9 @@ impl Arena {
                     // Draw a slot showing the B operand (mode and number).
                     Self::draw_operand_slot(
                         cell.instruction.b.mode.as_ref(),
-                        color::get_egui_color32(cell.operation_author),
+                        color::get_egui_color32(cell.operation_author.into()),
                         &cell.instruction_cache.b,
-                        color::get_egui_color32(cell.b_author),
+                        color::get_egui_color32(cell.b_author.into()),
                         slot_width - 10.0,
                         ui,
                     );

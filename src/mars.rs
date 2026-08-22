@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub mod address;
+mod cell_slot_author;
 pub mod config;
 pub mod core;
 pub mod core_cell;

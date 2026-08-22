@@ -1,5 +1,6 @@
 use crate::{
-    instruction::Instruction, mars::instruction_cache::InstructionCache,
+    instruction::Instruction,
+    mars::{cell_slot_author::CellSlotAuthor, instruction_cache::InstructionCache},
     warrior::warrior_id::WarriorId,
 };
 
@@ -8,9 +9,9 @@ pub struct CoreCell {
     pub instruction: Instruction,
     pub instruction_cache: InstructionCache,
 
-    pub operation_author: Option<WarriorId>,
-    pub a_author: Option<WarriorId>,
-    pub b_author: Option<WarriorId>,
+    pub operation_author: CellSlotAuthor,
+    pub a_author: CellSlotAuthor,
+    pub b_author: CellSlotAuthor,
 }
 
 impl Default for CoreCell {
@@ -20,9 +21,9 @@ impl Default for CoreCell {
         Self {
             instruction,
             instruction_cache: (&instruction).into(),
-            operation_author: None,
-            a_author: None,
-            b_author: None,
+            operation_author: CellSlotAuthor::None,
+            a_author: CellSlotAuthor::None,
+            b_author: CellSlotAuthor::None,
         }
     }
 }
@@ -32,58 +33,37 @@ impl CoreCell {
         Self {
             instruction_cache: (&instruction).into(),
             instruction,
-            operation_author: author,
-            a_author: author,
-            b_author: author,
+            operation_author: author.into(),
+            a_author: author.into(),
+            b_author: author.into(),
         }
     }
 
     pub fn set_instruction(&mut self, instruction: Instruction, warrior_id: WarriorId) {
+        let author = Some(warrior_id).into();
+
         self.instruction_cache = (&instruction).into();
         self.instruction = instruction;
-        self.operation_author = Some(warrior_id);
-        self.a_author = Some(warrior_id);
-        self.b_author = Some(warrior_id);
+        self.operation_author = author;
+        self.a_author = author;
+        self.b_author = author;
     }
 
     pub fn set_a_number(&mut self, a_number: i32, warrior_id: WarriorId) {
         self.instruction.a.number = a_number;
         self.instruction_cache.a = a_number.to_string();
-        self.a_author = Some(warrior_id);
+        self.a_author = Some(warrior_id).into();
     }
 
     pub fn set_b_number(&mut self, b_number: i32, warrior_id: WarriorId) {
         self.instruction.b.number = b_number;
         self.instruction_cache.b = b_number.to_string();
-        self.b_author = Some(warrior_id);
+        self.b_author = Some(warrior_id).into();
     }
 
     pub fn clear_author(&mut self) {
-        self.operation_author = None;
-        self.a_author = None;
-        self.b_author = None;
+        self.operation_author = CellSlotAuthor::None;
+        self.a_author = CellSlotAuthor::None;
+        self.b_author = CellSlotAuthor::None;
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn inspect_sizes() {
-        println!("CoreCell: {}", std::mem::size_of::<CoreCell>()); // 144
-        println!("TempCell: {}", std::mem::size_of::<TempCell>()); // 104
-
-        println!("u8: {}", std::mem::size_of::<u8>());
-        println!("Option<u8>: {}", std::mem::size_of::<Option<u8>>());
-    }
-}
-
-pub struct TempCell {
-    pub instruction: Instruction,
-    pub instruction_cache: InstructionCache,
-
-    pub operation_author: Option<u8>,
-    pub a_author: Option<u8>,
-    pub b_author: Option<u8>,
 }
