@@ -8,6 +8,7 @@ use macroquad::prelude::*;
 use crate::{
     color,
     game::GameContext,
+    instruction::opcode::Opcode,
     mars::{Mars, address::Address, config::Config},
     renderer::Renderer,
     scene::{
@@ -300,6 +301,13 @@ impl Arena {
                     1.0
                 };
                 draw_rectangle_lines(x, y, cell_width, cell_height, thickness, WHITE);
+
+                // Draw a diagonal line if this cell contains a `DAT` written by some warrior.
+                if cell.instruction.operation.opcode == Opcode::DAT
+                    && cell.operation_author.is_some()
+                {
+                    draw_line(x, y, x + cell_width, y + cell_height, 1.0, WHITE);
+                }
             }
         }
 
