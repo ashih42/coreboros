@@ -96,8 +96,6 @@ impl Arena {
     }
 
     fn start_new_game(&mut self) {
-        info!("Start New Game");
-
         self.stop();
 
         let loading_next_game = self.mars.game_over;

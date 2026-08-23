@@ -33,8 +33,6 @@ impl TextEditor {
         if self.cached_input_number_of_lines != number_of_lines {
             self.cached_input_number_of_lines = number_of_lines;
             self.line_numbers_col = Self::generate_line_numbers_col(number_of_lines);
-
-            println!("update_line_numbers_col_if_changed() updated to: {number_of_lines}");
         }
     }
 
@@ -57,10 +55,7 @@ impl TextEditor {
         }
 
         // Return cache or build new cached value.
-        let galley = cached_galley.get_or_insert_with(|| {
-            println!("New layout_job!");
-            Self::build_galley(ui, input)
-        });
+        let galley = cached_galley.get_or_insert_with(|| Self::build_galley(ui, input));
 
         Arc::clone(galley)
     }
