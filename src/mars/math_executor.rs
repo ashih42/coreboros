@@ -11,12 +11,14 @@ pub enum ArithmeticOperation {
 
 pub struct MathExecutor {
     core_size: i32,
+    half_size: i32,
 }
 
 impl MathExecutor {
     pub fn new(core_size: usize) -> Self {
         Self {
             core_size: core_size as i32,
+            half_size: (core_size as i32) / 2,
         }
     }
 
@@ -29,8 +31,19 @@ impl MathExecutor {
         wrapped_instruction
     }
 
+    // Normalize `number` to a small value within range of `core_size` centered around 0.
+    /// Example:
+    /// If `coresize`=8000, this operation maps `number` to some value in [-4000, 3999]
     fn wrap(&self, number: i32) -> i32 {
-        number.rem_euclid(self.core_size)
+        let value = number.rem_euclid(self.core_size);
+
+        // Return a small non-negative number as is.
+        if value < self.half_size {
+            return value;
+        }
+
+        // Return a a large positive number as a small negative number.
+        value - self.core_size
     }
 
     pub fn increment(&self, number: i32) -> i32 {
