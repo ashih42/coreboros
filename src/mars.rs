@@ -145,6 +145,7 @@ impl Mars {
             position += instructions + separation;
         }
 
+        rng::shuffle(&mut positions);
         positions
     }
 
