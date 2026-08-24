@@ -29,7 +29,7 @@ pub struct ConfigManager {
 
 impl Default for ConfigManager {
     fn default() -> Self {
-        let selected_core_dimension = CoreDimension::Nano;
+        let selected_core_dimension = CoreDimension::Small;
         let available_core_dimensions = CoreDimension::list_all_values();
 
         let selected_core_initialization_strategy = CoreInitializationStrategy::FillDat00;
@@ -39,8 +39,10 @@ impl Default for ConfigManager {
         let selected_task_queue_capacity = 64;
         let available_task_queue_capacities = Box::new([1, 4, 16, 64, 128, 256]);
 
-        let selected_turn_limit = 4_000;
-        let available_turn_limits = Box::new([40, 80, 400, 800, 4_000, 8_000, 40_000, 80_000]);
+        let selected_turn_limit = 2_000;
+        let available_turn_limits = Box::new([
+            40, 80, 200, 400, 800, 2_000, 4_000, 8_000, 20_000, 40_000, 80_000,
+        ]);
 
         let selected_warrior_separation_strategy = WarriorSeparationStrategy::Random;
         let available_warrior_separation_strategies = WarriorSeparationStrategy::list_all_values();

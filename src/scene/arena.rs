@@ -20,7 +20,7 @@ use crate::{
     warrior_queue::WarriorQueue,
 };
 
-const LEFT_SIDEBAR_WIDTH: f32 = 200.0;
+const LEFT_SIDEBAR_WIDTH: f32 = 220.0;
 const RIGHT_SIDEBAR_WIDTH: f32 = 360.0;
 
 pub struct Arena {
@@ -468,7 +468,7 @@ impl Arena {
 
         // Use a thick colored border for the current-turn warrior.
         let card_stroke = if warrior_id == self.mars.current_warrior_id {
-            egui::Stroke::new(2.0, egui::Color32::WHITE)
+            egui::Stroke::new(1.0, egui::Color32::WHITE)
         } else {
             egui::Stroke::new(1.0, egui::Color32::GRAY)
         };
