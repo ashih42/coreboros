@@ -8,11 +8,16 @@ impl Default for WarriorVault {
     fn default() -> Self {
         let warriors = vec![
             Warrior::dwarf(),
-            Warrior::dwarf_verbose(),
+            Warrior::dwarf_2(),
             Warrior::imp(),
             Warrior::imp_factory(),
             Warrior::nop(),
             Warrior::nop_20(),
+            Warrior::looping_paper(),
+            Warrior::blur_scanner(),
+            Warrior::transposition_stone(), // TODO: Something might be wrong with my execution logic. Investigate!
+            Warrior::self_bombing_stone(),
+            Warrior::self_vamping_vampire(), // TODO: Something might be wrong with my execution logic. Investigate!
         ];
 
         let mut vault = Self { warriors };

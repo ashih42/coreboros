@@ -18,9 +18,9 @@ impl Warrior {
         Self::from_text(redcode).expect("`dwarf` example redcode should be valid")
     }
 
-    pub fn dwarf_verbose() -> Self {
+    pub fn dwarf_2() -> Self {
         let redcode = indoc! {r"
-            ;name      dwarf_verbose
+            ;name      dwarf_2
             ;strategy  I also bomb every 4th cell.
 
             org        dwarf
@@ -102,5 +102,101 @@ impl Warrior {
 
         #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop_20` example redcode should be valid")
+    }
+
+    pub fn looping_paper() -> Self {
+        let redcode = indoc::indoc! {"
+            ;name      looping_paper
+
+            paper   mov    #5,       #0
+            copy    mov    <paper,   {dest
+                    jmn    copy,     paper
+                    spl    >paper,   {-1277
+            dest    jmz    5620,     *0
+        "};
+
+        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
+        Self::from_text(redcode).expect("`nop` example redcode should be valid")
+    }
+
+    pub fn blur_scanner() -> Self {
+        let redcode = indoc::indoc! {"
+            ;name      blur_scanner
+
+            wptr    mov.b   scan,       #0
+            scan    add     #4884,      #4884
+            gate    mov     *bomb,      >wptr
+                    jmz.f   scan,       @scan
+                    jmn     wptr,       *wptr
+
+            bomb    spl     0,          0
+            clear   mov     dbmb,       >gate
+                    djn.f   clear,      >gate
+            dbmb    dat     <2667,      2-gate
+        "};
+
+        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
+        Self::from_text(redcode).expect("`nop` example redcode should be valid")
+    }
+
+    pub fn transposition_stone() -> Self {
+        let redcode = indoc::indoc! {"
+            ;name      transposition_stone
+
+            inc     spl    #-1185,   <1185
+            stone   mov    >1185,    1-1185
+                    sub    inc,      stone
+                    djn.f  stone,    <5555
+        "};
+
+        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
+        Self::from_text(redcode).expect("`nop` example redcode should be valid")
+    }
+
+    pub fn self_bombing_stone() -> Self {
+        let redcode = indoc::indoc! {"
+            ;name      self_bombing_stone
+
+                    spl     #0,     0
+            stone   mov     bomb,   hit+953*3382
+            hit     add     #-953,  stone               ; bomb dropped here
+                    djn.f   stone,  <5555
+
+            bomb    dat     >-1,    {1
+        "};
+
+        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
+        Self::from_text(redcode).expect("`nop` example redcode should be valid")
+    }
+
+    pub fn self_vamping_vampire() -> Self {
+        let redcode = indoc::indoc! {"
+            ;name      self_vamping_vampire
+
+            inc         spl    #2895,       <-2895
+            vampire     mov    fang,        @fang         ; fang dropped here
+                        sub    inc,         fang
+                        djn.f  vampire,     *fang
+
+                        dat    0,           0
+                        dat    0,           0
+                        dat    0,           0
+                        dat    0,           0
+                        dat    0,           0
+
+            trap        mov    bomb+1,      <vampire-9
+                        spl    trap
+                        jmp    trap+1
+            bomb        dat    <5334,       <2667
+
+                        dat    0,           0
+                        dat    0,           0
+                        dat    0,           0
+
+            fang        jmp    trap-vampire-2895,   <vampire+2895
+        "};
+
+        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
+        Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 }
