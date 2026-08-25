@@ -8,7 +8,7 @@ use crate::{
     mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     renderer::Renderer,
     scene::{Scene, editor::text_editor::TextEditor, scene_change::SceneChange},
-    warrior::{Warrior, warrior_id::WarriorId},
+    warrior::Warrior,
     warrior_queue::WarriorQueue,
     warrior_vault::WarriorVault,
 };
@@ -296,67 +296,102 @@ impl Editor {
 
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for index in 0..self.warrior_queue.len() {
-                        self.draw_queued_warrior_frame(index, ui, &game_ctx.renderer);
+                        self.draw_queued_warrior_widget(index, ui, &game_ctx.renderer);
                         ui.add_space(10.0);
                     }
                 });
             });
     }
 
-    /// Draw the queued warrior.
-    /// Define behaviors on clicking the frame or buttons created from `define_queued_warrior_frame_and_buttons`.
-    fn draw_queued_warrior_frame(&mut self, index: usize, ui: &mut egui::Ui, renderer: &Renderer) {
-        if let Some((
-            frame_response,
-            close_button_response,
-            move_up_button_response,
-            move_down_button_response,
-        )) = self.warrior_queue.get(index).map(|warrior| {
-            Self::define_queued_warrior_frame_and_buttons(warrior, index, ui, renderer)
-        }) {
-            if frame_response.clicked()
+    /// Draw a widget for a queued warrior, with a frame showing his details, and
+    /// with 3 buttons to remove, move up, and move down this warrior in the queue.
+    fn draw_queued_warrior_widget(&mut self, index: usize, ui: &mut egui::Ui, renderer: &Renderer) {
+        let button_size = egui::vec2(18.0, 18.0);
+
+        ui.scope_builder(egui::UiBuilder::new(), |ui| {
+            // Draw the frame.
+            let frame_rect = self.draw_queued_warrior_frame(index, ui, renderer);
+
+            // Set up a response for clicking the frame.
+            if ui
+                .interact(frame_rect, egui::Id::new(index), egui::Sense::click())
+                .clicked()
                 && let Some(warrior) = self.warrior_queue.get(index)
             {
                 self.load_current_warrior(warrior.clone());
             }
 
-            if close_button_response.clicked() {
+            // Draw and set up a response for clicking the remove button.
+            if ui
+                .put(
+                    egui::Rect::from_min_size(
+                        egui::pos2(
+                            frame_rect.max.x - (button_size.x / 2.0) - 15.0,
+                            frame_rect.min.y - (button_size.y / 2.0) + 15.0,
+                        ),
+                        button_size,
+                    ),
+                    egui::Button::new("❌").small().corner_radius(5),
+                )
+                .clicked()
+            {
                 self.warrior_queue.remove(index);
             }
 
-            if move_up_button_response.clicked() {
+            // Draw and set up a response for clicking the move up button.
+            if ui
+                .put(
+                    egui::Rect::from_min_size(
+                        egui::pos2(
+                            frame_rect.max.x - (button_size.x / 2.0) - 15.0,
+                            frame_rect.min.y - (button_size.y / 2.0) + 15.0 + 25.0,
+                        ),
+                        button_size,
+                    ),
+                    egui::Button::new("🔼").small().corner_radius(5),
+                )
+                .clicked()
+            {
                 self.warrior_queue.move_up(index);
             }
 
-            if move_down_button_response.clicked() {
+            // Draw and set up a response for clicking the move down button.
+            if ui
+                .put(
+                    egui::Rect::from_min_size(
+                        egui::pos2(
+                            frame_rect.max.x - (button_size.x / 2.0) - 15.0,
+                            frame_rect.min.y - (button_size.y / 2.0) + 15.0 + 50.0,
+                        ),
+                        button_size,
+                    ),
+                    egui::Button::new("🔽").small().corner_radius(5),
+                )
+                .clicked()
+            {
                 self.warrior_queue.move_down(index);
             }
-        }
+        });
     }
 
-    /// Draw a frame for the warrior, with buttons to close, move up, or move down this warrior in the queue.
-    /// Return the `Response` objects of the frame and 3 buttons.
-    fn define_queued_warrior_frame_and_buttons(
-        warrior: &Warrior,
-        warrior_id: WarriorId,
+    /// Draw a frame for a queued warrior, showing his color, name, and number of instructions.
+    fn draw_queued_warrior_frame(
+        &self,
+        index: usize,
         ui: &mut egui::Ui,
         renderer: &Renderer,
-    ) -> (
-        egui::Response,
-        egui::Response,
-        egui::Response,
-        egui::Response,
-    ) {
-        let warrior_name = warrior.metadata.name.as_str();
-        let warrior_color = color::get_egui_color32(Some(warrior_id));
-        let num_instructions = warrior.instructions.len();
+    ) -> egui::Rect {
+        let frame = egui::Frame::group(ui.style())
+            .fill(egui::Color32::from_rgb(40, 40, 40))
+            .stroke(egui::Stroke::new(1.0, egui::Color32::GRAY))
+            .inner_margin(8.0)
+            .show(ui, |ui| {
+                if let Some(warrior) = self.warrior_queue.get(index) {
+                    let warrior_id = index;
+                    let warrior_name = warrior.metadata.name.as_str();
+                    let warrior_color = color::get_egui_color32(Some(warrior_id));
+                    let num_instructions = warrior.instructions.len();
 
-        let inner_response = ui.scope_builder(egui::UiBuilder::new(), |ui| {
-            let frame = egui::Frame::group(ui.style())
-                .fill(egui::Color32::from_rgb(40, 40, 40))
-                .stroke(egui::Stroke::new(1.0, egui::Color32::GRAY))
-                .inner_margin(8.0)
-                .show(ui, |ui| {
                     ui.set_min_width(LEFT_SIDEBAR_WIDTH - 40.0);
 
                     ui.horizontal(|ui| {
@@ -388,51 +423,10 @@ impl Editor {
                         ui.label("Instructions:");
                         ui.label(renderer.num_to_str(num_instructions));
                     });
-                });
+                }
+            });
 
-            // Prepare a response from clicking on the entire frame.
-            let frame_rect = frame.response.rect;
-            let frame_response =
-                ui.interact(frame_rect, egui::Id::new(warrior_id), egui::Sense::click());
-
-            // Prepare a response from clicking on the "X" button at top-right corner of frame.
-            let button_size = egui::vec2(18.0, 18.0);
-            let x_button_pos = egui::pos2(
-                frame_rect.max.x - (button_size.x / 2.0) - 15.0,
-                frame_rect.min.y - (button_size.y / 2.0) + 15.0,
-            );
-            let close_button_response = ui.put(
-                egui::Rect::from_min_size(x_button_pos, button_size),
-                egui::Button::new("❌").small().corner_radius(5),
-            );
-
-            let move_up_button_pos = egui::pos2(
-                frame_rect.max.x - (button_size.x / 2.0) - 15.0,
-                frame_rect.min.y - (button_size.y / 2.0) + 15.0 + 25.0,
-            );
-            let move_up_button_response = ui.put(
-                egui::Rect::from_min_size(move_up_button_pos, button_size),
-                egui::Button::new("🔼").small().corner_radius(5),
-            );
-
-            let move_down_button_pos = egui::pos2(
-                frame_rect.max.x - (button_size.x / 2.0) - 15.0,
-                frame_rect.min.y - (button_size.y / 2.0) + 15.0 + 25.0 * 2.0,
-            );
-            let move_down_button_response = ui.put(
-                egui::Rect::from_min_size(move_down_button_pos, button_size),
-                egui::Button::new("🔽").small().corner_radius(5),
-            );
-
-            (
-                frame_response,
-                close_button_response,
-                move_up_button_response,
-                move_down_button_response,
-            )
-        });
-
-        inner_response.inner
+        frame.response.rect
     }
 
     fn draw_right_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &mut GameContext) {
