@@ -1,8 +1,9 @@
+use strum::AsRefStr;
 use strum_macros::{Display, EnumString};
 
 use crate::rng;
 
-#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
+#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq, AsRefStr)]
 #[strum(ascii_case_insensitive)]
 pub enum Modifier {
     A,

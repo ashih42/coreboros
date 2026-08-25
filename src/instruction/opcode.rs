@@ -1,3 +1,4 @@
+use strum::AsRefStr;
 use strum_macros::{Display, EnumString};
 
 use crate::rng;
@@ -7,7 +8,7 @@ use crate::rng;
     clippy::upper_case_acronyms,
     reason = "The preferred style convention is to write opcodes in all capital letters."
 )]
-#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
+#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq, AsRefStr)]
 #[strum(ascii_case_insensitive)]
 pub enum Opcode {
     DAT, // data (kills the process)

@@ -8,7 +8,7 @@ use macroquad::prelude::*;
 use crate::{
     color,
     game::GameContext,
-    instruction::opcode::Opcode,
+    instruction::{opcode::Opcode, operand::Operand, operation::Operation},
     mars::{Mars, address::Address, config::Config},
     renderer::Renderer,
     scene::{
@@ -149,6 +149,10 @@ impl Arena {
 
         if is_key_pressed(KeyCode::Space) {
             self.toggle_play_pause();
+        }
+
+        if is_key_pressed(KeyCode::T) {
+            self.playback_manager.play_turbo();
         }
     }
 
@@ -380,10 +384,10 @@ impl Arena {
         const SUBHEADING_FONT_SIZE: f32 = 20.0;
 
         // Keep Mars logic in 0-based counting, but display these numbers in 1-based counting.
-        let game_str = renderer.num_to_str(self.mars.game_counter + 1);
-        let turn_str = renderer.num_to_str(self.mars.turn_counter + 1);
-        let turn_limit_str = renderer.num_to_str(self.mars.config.turn_limit);
-        let cycle_str = renderer.num_to_str(self.mars.cycle_counter + 1);
+        let game_str = renderer.usize_to_str(self.mars.game_counter + 1);
+        let turn_str = renderer.usize_to_str(self.mars.turn_counter + 1);
+        let turn_limit_str = renderer.usize_to_str(self.mars.config.turn_limit);
+        let cycle_str = renderer.usize_to_str(self.mars.cycle_counter + 1);
 
         egui::SidePanel::left("left_sidebar")
             .exact_width(LEFT_SIDEBAR_WIDTH)
@@ -439,7 +443,7 @@ impl Arena {
 
             if let Some(winner_id) = self.mars.winner {
                 let color = color::get_egui_color32(Some(winner_id));
-                let winner_id_str = renderer.num_to_str(winner_id);
+                let winner_id_str = renderer.usize_to_str(winner_id + 1);
 
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("Winner:").size(WINNER_FONT_SIZE));
@@ -462,9 +466,9 @@ impl Arena {
         let warrior_name = &warrior_context.warrior.metadata.name;
         let warrior_color = color::get_egui_color32(Some(warrior_id));
 
-        let tasks_str = renderer.num_to_str(warrior_context.task_queue.len());
-        let task_capacity_str = renderer.num_to_str(warrior_context.task_queue.get_capacity());
-        let wins_str = renderer.num_to_str(warrior_context.num_wins);
+        let tasks_str = renderer.usize_to_str(warrior_context.task_queue.len());
+        let task_capacity_str = renderer.usize_to_str(warrior_context.task_queue.get_capacity());
+        let wins_str = renderer.usize_to_str(warrior_context.num_wins);
 
         // Use a thick colored border for the current-turn warrior.
         let card_stroke = if warrior_id == self.mars.current_warrior_id {
@@ -506,7 +510,7 @@ impl Arena {
 
                     // Draw "Warrior X".
                     ui.colored_label(egui::Color32::WHITE, "Warrior");
-                    ui.colored_label(egui::Color32::WHITE, renderer.num_to_str(warrior_id + 1));
+                    ui.colored_label(egui::Color32::WHITE, renderer.usize_to_str(warrior_id + 1));
                 });
 
                 ui.add_space(2.0);
@@ -654,39 +658,40 @@ impl Arena {
                     self.draw_warrior_icon_at_address(address, ui, renderer);
 
                     // Draw a slot showing the absolute address.
-                    Self::draw_slot(
-                        renderer.num_to_str(address),
+                    Self::draw_address_slot(
+                        address,
                         egui::Color32::DARK_GRAY,
                         slot_width,
                         ui,
+                        renderer,
                     );
 
-                    // Draw a slot showing the operation (opcode and modifier).
-                    Self::draw_slot(
-                        &cell.instruction_cache.operation,
+                    // Draw a slot showing the operation.
+                    Self::draw_operation_slot(
+                        &cell.instruction.operation,
                         color::get_egui_color32(cell.operation_author.into()),
                         slot_width,
                         ui,
                     );
 
-                    // Draw a slot showing the A operand (mode and number).
+                    // Draw a slot showing the A operand.
                     Self::draw_operand_slot(
-                        cell.instruction.a.mode.as_ref(),
+                        &cell.instruction.a,
                         color::get_egui_color32(cell.operation_author.into()),
-                        &cell.instruction_cache.a,
                         color::get_egui_color32(cell.a_author.into()),
                         slot_width - 10.0,
                         ui,
+                        renderer,
                     );
 
-                    // Draw a slot showing the B operand (mode and number).
+                    // Draw a slot showing the B operand.
                     Self::draw_operand_slot(
-                        cell.instruction.b.mode.as_ref(),
+                        &cell.instruction.b,
                         color::get_egui_color32(cell.operation_author.into()),
-                        &cell.instruction_cache.b,
                         color::get_egui_color32(cell.b_author.into()),
                         slot_width - 10.0,
                         ui,
+                        renderer,
                     );
                 });
 
@@ -695,69 +700,101 @@ impl Arena {
         });
     }
 
-    /// Draw a "slot" for a row of address data.
-    /// A "slot" may hold one of:
-    /// - the absolute address
-    /// - the operation (opcode and modifier) at this address
-    fn draw_slot(text: &str, color: egui::Color32, slot_width: f32, ui: &mut egui::Ui) {
+    /// Draw a slot showing the absolute address number of a row in the core dump.
+    fn draw_address_slot(
+        address: usize,
+        bg_color: egui::Color32,
+        slot_width: f32,
+        ui: &mut egui::Ui,
+        renderer: &Renderer,
+    ) {
         ui.allocate_ui(egui::vec2(slot_width, ui.available_height()), |ui| {
-            let frame = egui::Frame::NONE
-                .fill(color)
-                .inner_margin(egui::Margin::symmetric(4, 2));
-
-            frame.show(ui, |ui| {
-                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                    ui.colored_label(egui::Color32::WHITE, text);
+            egui::Frame::NONE
+                .fill(bg_color)
+                .inner_margin(egui::Margin::symmetric(4, 2))
+                .show(ui, |ui| {
+                    ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                        ui.colored_label(egui::Color32::WHITE, renderer.usize_to_str(address));
+                    });
                 });
-            });
         });
     }
 
-    /// Draw 2 colored boxes next to each other:
-    /// - `addressing_mode` with its color.
-    /// - `number` with its color.
-    fn draw_operand_slot(
-        addressing_mode: &str,
-        addressing_mode_color: egui::Color32,
-        number: &str,
-        number_color: egui::Color32,
+    /// Draw a slot showing the operation (opcode.modifier) of a row in the core dump.
+    fn draw_operation_slot(
+        operation: &Operation,
+        bg_color: egui::Color32,
         slot_width: f32,
         ui: &mut egui::Ui,
+    ) {
+        ui.allocate_ui(egui::vec2(slot_width, ui.available_height()), |ui| {
+            egui::Frame::NONE
+                .fill(bg_color)
+                .inner_margin(egui::Margin::symmetric(4, 2))
+                .show(ui, |ui| {
+                    ui.set_min_width(slot_width);
+                    ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = 0.0;
+                            ui.colored_label(egui::Color32::WHITE, operation.opcode.as_ref());
+                            ui.colored_label(egui::Color32::WHITE, ".");
+                            ui.colored_label(egui::Color32::WHITE, operation.modifier.as_ref());
+                        });
+                    });
+                });
+        });
+    }
+
+    /// Draw a slot showing the an operand (addressing mode and number) of a row in the core dump.
+    fn draw_operand_slot(
+        operand: &Operand,
+        addressing_mode_bg_color: egui::Color32,
+        number_bg_color: egui::Color32,
+        slot_width: f32,
+        ui: &mut egui::Ui,
+        renderer: &Renderer,
     ) {
         const ADDRESSING_MODE_WIDTH: f32 = 10.0;
 
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
 
-            // Draw `addressing_mode` with its color.
+            // Draw the operand's addressing mode, with its own background color.
             ui.allocate_ui(
                 egui::vec2(ADDRESSING_MODE_WIDTH, ui.available_height()),
                 |ui| {
-                    let frame = egui::Frame::NONE
-                        .fill(addressing_mode_color)
-                        .inner_margin(egui::Margin::symmetric(4, 2));
-
-                    frame.show(ui, |ui| {
-                        ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                            ui.colored_label(egui::Color32::WHITE, addressing_mode);
+                    egui::Frame::NONE
+                        .fill(addressing_mode_bg_color)
+                        .inner_margin(egui::Margin::symmetric(4, 2))
+                        .show(ui, |ui| {
+                            ui.with_layout(
+                                egui::Layout::top_down_justified(egui::Align::LEFT),
+                                |ui| {
+                                    ui.colored_label(egui::Color32::WHITE, operand.mode.as_ref());
+                                },
+                            );
                         });
-                    });
                 },
             );
 
-            // Draw `number` with its color.
+            // Draw the operand's number, with its own background color.
             ui.allocate_ui(
                 egui::vec2(slot_width - ADDRESSING_MODE_WIDTH, ui.available_height()),
                 |ui| {
-                    let frame = egui::Frame::NONE
-                        .fill(number_color)
-                        .inner_margin(egui::Margin::symmetric(4, 2));
-
-                    frame.show(ui, |ui| {
-                        ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                            ui.colored_label(egui::Color32::WHITE, number);
+                    egui::Frame::NONE
+                        .fill(number_bg_color)
+                        .inner_margin(egui::Margin::symmetric(4, 2))
+                        .show(ui, |ui| {
+                            ui.with_layout(
+                                egui::Layout::top_down_justified(egui::Align::LEFT),
+                                |ui| {
+                                    ui.colored_label(
+                                        egui::Color32::WHITE,
+                                        renderer.i32_to_str(operand.number),
+                                    );
+                                },
+                            );
                         });
-                    });
                 },
             );
         });

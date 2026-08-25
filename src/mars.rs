@@ -19,7 +19,6 @@ pub mod config;
 mod cell_slot_author;
 mod core;
 mod core_cell;
-mod instruction_cache;
 mod math_executor;
 mod opcode_executor;
 mod task_outcome;

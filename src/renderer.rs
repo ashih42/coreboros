@@ -29,8 +29,13 @@ impl Default for Renderer {
 
 impl Renderer {
     #[inline]
-    pub fn num_to_str(&self, num: usize) -> &str {
-        self.number_str_cache.get_str(num)
+    pub fn usize_to_str(&self, num: usize) -> &str {
+        self.number_str_cache.i32_to_str(num as i32)
+    }
+
+    #[inline]
+    pub fn i32_to_str(&self, num: i32) -> &str {
+        self.number_str_cache.i32_to_str(num)
     }
 
     /// Override the UI context style to use monospace fonts.

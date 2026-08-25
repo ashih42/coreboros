@@ -56,4 +56,9 @@ impl PlaybackManager {
             Turbo => Normal,
         }
     }
+
+    pub fn play_turbo(&mut self) {
+        self.set_speed(PlaybackSpeed::Turbo);
+        self.play();
+    }
 }

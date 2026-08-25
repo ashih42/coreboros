@@ -263,12 +263,12 @@ impl Editor {
                     ui.spacing_mut().item_spacing.x = 0.0;
 
                     ui.label("Warriors (");
-                    ui.label(game_ctx.renderer.num_to_str(self.warrior_queue.len()));
+                    ui.label(game_ctx.renderer.usize_to_str(self.warrior_queue.len()));
                     ui.label("/");
                     ui.label(
                         game_ctx
                             .renderer
-                            .num_to_str(self.warrior_queue.get_capacity()),
+                            .usize_to_str(self.warrior_queue.get_capacity()),
                     );
                     ui.label(")");
                 });
@@ -404,7 +404,10 @@ impl Editor {
 
                         // Draw "Warrior X".
                         ui.colored_label(egui::Color32::WHITE, "Warrior");
-                        ui.colored_label(egui::Color32::WHITE, renderer.num_to_str(warrior_id + 1));
+                        ui.colored_label(
+                            egui::Color32::WHITE,
+                            renderer.usize_to_str(warrior_id + 1),
+                        );
                     });
 
                     ui.add_space(2.0);
@@ -421,7 +424,7 @@ impl Editor {
                     // Draw number of instructions for this warrior.
                     ui.horizontal(|ui| {
                         ui.label("Instructions:");
-                        ui.label(renderer.num_to_str(num_instructions));
+                        ui.label(renderer.usize_to_str(num_instructions));
                     });
                 }
             });
@@ -546,7 +549,7 @@ impl Editor {
                 egui::vec2(50.0, ui.available_height()),
                 egui::Layout::centered_and_justified(egui::Direction::RightToLeft),
                 |ui| {
-                    ui.label(renderer.num_to_str(warrior.instructions.len()));
+                    ui.label(renderer.usize_to_str(warrior.instructions.len()));
                 },
             );
 
@@ -615,14 +618,14 @@ impl Editor {
         ui.label("Task Queue Capacity");
 
         egui::ComboBox::from_id_salt("task_queue_capacity_dropdown")
-            .selected_text(renderer.num_to_str(config_manager.selected_task_queue_capacity))
+            .selected_text(renderer.usize_to_str(config_manager.selected_task_queue_capacity))
             .width(full_width) // Force the ComboBox button to stretch entirely
             .show_ui(ui, |ui| {
                 for &capacity in &config_manager.available_task_queue_capacities {
                     ui.selectable_value(
                         &mut config_manager.selected_task_queue_capacity,
                         capacity,
-                        renderer.num_to_str(capacity),
+                        renderer.usize_to_str(capacity),
                     );
                 }
             });
@@ -632,14 +635,14 @@ impl Editor {
         ui.label("Turn Limit");
 
         egui::ComboBox::from_id_salt("turn_limit_dropdown")
-            .selected_text(renderer.num_to_str(config_manager.selected_turn_limit))
+            .selected_text(renderer.usize_to_str(config_manager.selected_turn_limit))
             .width(full_width) // Force the ComboBox button to stretch entirely
             .show_ui(ui, |ui| {
                 for &limit in &config_manager.available_turn_limits {
                     ui.selectable_value(
                         &mut config_manager.selected_turn_limit,
                         limit,
-                        renderer.num_to_str(limit),
+                        renderer.usize_to_str(limit),
                     );
                 }
             });
@@ -671,7 +674,8 @@ impl Editor {
 
                 egui::ComboBox::from_id_salt("min_distance_between_warriors_dropdown")
                     .selected_text(
-                        renderer.num_to_str(config_manager.selected_min_distance_between_warriors),
+                        renderer
+                            .usize_to_str(config_manager.selected_min_distance_between_warriors),
                     )
                     .width(full_width) // Force the ComboBox button to stretch entirely
                     .show_ui(ui, |ui| {
@@ -679,7 +683,7 @@ impl Editor {
                             ui.selectable_value(
                                 &mut config_manager.selected_min_distance_between_warriors,
                                 distances,
-                                renderer.num_to_str(distances),
+                                renderer.usize_to_str(distances),
                             );
                         }
                     });

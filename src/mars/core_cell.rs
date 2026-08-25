@@ -1,14 +1,11 @@
 use crate::{
-    instruction::Instruction,
-    mars::{cell_slot_author::CellSlotAuthor, instruction_cache::InstructionCache},
+    instruction::Instruction, mars::cell_slot_author::CellSlotAuthor,
     warrior::warrior_id::WarriorId,
 };
 
 #[derive(Clone)]
 pub struct CoreCell {
     pub instruction: Instruction,
-    pub instruction_cache: InstructionCache,
-
     pub operation_author: CellSlotAuthor,
     pub a_author: CellSlotAuthor,
     pub b_author: CellSlotAuthor,
@@ -20,7 +17,6 @@ impl Default for CoreCell {
 
         Self {
             instruction,
-            instruction_cache: (&instruction).into(),
             operation_author: CellSlotAuthor::None,
             a_author: CellSlotAuthor::None,
             b_author: CellSlotAuthor::None,
@@ -31,7 +27,6 @@ impl Default for CoreCell {
 impl CoreCell {
     pub fn new(instruction: Instruction, author: Option<WarriorId>) -> Self {
         Self {
-            instruction_cache: (&instruction).into(),
             instruction,
             operation_author: author.into(),
             a_author: author.into(),
@@ -42,7 +37,6 @@ impl CoreCell {
     pub fn set_instruction(&mut self, instruction: Instruction, warrior_id: WarriorId) {
         let author = Some(warrior_id).into();
 
-        self.instruction_cache = (&instruction).into();
         self.instruction = instruction;
         self.operation_author = author;
         self.a_author = author;
@@ -51,13 +45,11 @@ impl CoreCell {
 
     pub fn set_a_number(&mut self, a_number: i32, warrior_id: WarriorId) {
         self.instruction.a.number = a_number;
-        self.instruction_cache.a = a_number.to_string();
         self.a_author = Some(warrior_id).into();
     }
 
     pub fn set_b_number(&mut self, b_number: i32, warrior_id: WarriorId) {
         self.instruction.b.number = b_number;
-        self.instruction_cache.b = b_number.to_string();
         self.b_author = Some(warrior_id).into();
     }
 

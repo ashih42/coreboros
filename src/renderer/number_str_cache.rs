@@ -1,31 +1,21 @@
 use elsa::FrozenMap;
 
-const DEFAULT_STORAGE_CAPACITY: usize = 8000;
-
 pub struct NumberStrCache {
-    storage: [Box<str>; DEFAULT_STORAGE_CAPACITY],
-    extra_storage: FrozenMap<usize, Box<str>>,
+    i32_str_cache: FrozenMap<i32, Box<str>>,
 }
 
 impl Default for NumberStrCache {
     fn default() -> Self {
         Self {
-            storage: std::array::from_fn(|i| i.to_string().into_boxed_str()),
-            extra_storage: FrozenMap::new(),
+            i32_str_cache: FrozenMap::new(),
         }
     }
 }
 
 impl NumberStrCache {
-    /// Get a `&str` representation for input `num`.
-    /// First look in `storage`, then look/insert in `extra_storage`.
-    pub fn get_str(&self, num: usize) -> &str {
-        if num < self.storage.len() {
-            return &self.storage[num];
-        }
-
-        self.extra_storage.get(&num).unwrap_or_else(|| {
-            self.extra_storage
+    pub fn i32_to_str(&self, num: i32) -> &str {
+        self.i32_str_cache.get(&num).unwrap_or_else(|| {
+            self.i32_str_cache
                 .insert(num, num.to_string().into_boxed_str())
         })
     }
