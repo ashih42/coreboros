@@ -33,6 +33,10 @@ impl Default for Game {
 }
 
 impl Game {
+    #[allow(
+        clippy::future_not_send,
+        reason = "This game will run as a single-threaded WASM app."
+    )]
     pub async fn run(&mut self) {
         loop {
             match self.scene.update(&mut self.context) {

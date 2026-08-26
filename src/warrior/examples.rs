@@ -2,7 +2,13 @@ use indoc::indoc;
 
 use crate::warrior::Warrior;
 
+#[allow(
+    clippy::missing_panics_doc,
+    clippy::expect_used,
+    reason = "All examples are valid 👌"
+)]
 impl Warrior {
+    #[must_use]
     pub fn dwarf() -> Self {
         let redcode = indoc::indoc! {"
             ;name      dwarf
@@ -14,10 +20,10 @@ impl Warrior {
             DAT #0, #0
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`dwarf` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn dwarf_2() -> Self {
         let redcode = indoc! {r"
             ;name      dwarf_2
@@ -31,10 +37,10 @@ impl Warrior {
                        jmp dwarf
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`dwarf_verbose` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn imp() -> Self {
         let redcode = indoc::indoc! {"
             ;name      imp
@@ -43,10 +49,10 @@ impl Warrior {
             mov 0, 1
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`imp` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn imp_factory() -> Self {
         let redcode = indoc::indoc! {"
             ;name      imp_factory
@@ -56,10 +62,10 @@ impl Warrior {
             imp        mov imp, imp+1
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`imp_factory` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn nop() -> Self {
         let redcode = indoc::indoc! {"
             ;name      nop
@@ -68,10 +74,10 @@ impl Warrior {
             nop 0
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn nop_20() -> Self {
         let redcode = indoc::indoc! {"
             ;name      nop_20
@@ -100,10 +106,10 @@ impl Warrior {
             nop 19
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop_20` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn looping_paper() -> Self {
         let redcode = indoc::indoc! {"
             ;name      looping_paper
@@ -115,10 +121,10 @@ impl Warrior {
             dest    jmz    5620,     *0
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn blur_scanner() -> Self {
         let redcode = indoc::indoc! {"
             ;name      blur_scanner
@@ -135,10 +141,10 @@ impl Warrior {
             dbmb    dat     <2667,      2-gate
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn transposition_stone() -> Self {
         let redcode = indoc::indoc! {"
             ;name      transposition_stone
@@ -149,10 +155,10 @@ impl Warrior {
                     djn.f  stone,    <5555
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn self_bombing_stone() -> Self {
         let redcode = indoc::indoc! {"
             ;name      self_bombing_stone
@@ -165,10 +171,10 @@ impl Warrior {
             bomb    dat     >-1,    {1
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 
+    #[must_use]
     pub fn self_vamping_vampire() -> Self {
         let redcode = indoc::indoc! {"
             ;name      self_vamping_vampire
@@ -196,7 +202,6 @@ impl Warrior {
             fang        jmp    trap-vampire-2895,   <vampire+2895
         "};
 
-        #[allow(clippy::expect_used, reason = "Redcode is valid 👌")]
         Self::from_text(redcode).expect("`nop` example redcode should be valid")
     }
 }

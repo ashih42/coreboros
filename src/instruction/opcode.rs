@@ -40,14 +40,6 @@ pub enum Opcode {
 }
 
 impl Opcode {
-    /// Check if this `Opcode` is an operation that writes to the core.
-    pub fn is_write(&self) -> bool {
-        matches!(
-            self,
-            Self::MOV | Self::ADD | Self::SUB | Self::MUL | Self::DIV | Self::MOD
-        )
-    }
-
     pub fn random_opcode() -> Self {
         static ALL_OPCODES: &[Opcode] = &[
             Opcode::DAT,
@@ -73,6 +65,7 @@ impl Opcode {
 
         let index = rng::rand_range(0, ALL_OPCODES.len());
 
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
         ALL_OPCODES[index]
     }
 }

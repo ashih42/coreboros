@@ -34,8 +34,12 @@ impl Warrior {
         }
     }
 
-    pub fn from_text(redcode: &str) -> Result<Self> {
-        WarriorBuilder::from_text(redcode)
+    /// Try to construct a `Warrior` from input text.
+    ///
+    /// # Errors
+    /// Will return `Err` if Warrior is cannot be constructed.
+    pub fn from_text(text: &str) -> Result<Self> {
+        WarriorBuilder::from_text(text)
     }
 
     /// Try to construct a `Warrior` from input Redcode file at `path`.

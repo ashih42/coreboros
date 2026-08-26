@@ -15,14 +15,20 @@ pub struct MathExecutor {
 }
 
 impl MathExecutor {
-    pub fn new(core_size: usize) -> Self {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::as_conversions,
+        reason = "The conversion is safe 👌"
+    )]
+    pub const fn new(core_size: usize) -> Self {
         Self {
             core_size: core_size as i32,
             half_size: (core_size as i32) / 2,
         }
     }
 
-    pub fn wrap_instruction(&self, instruction: &Instruction) -> Instruction {
+    pub const fn wrap_instruction(&self, instruction: &Instruction) -> Instruction {
         let mut wrapped_instruction = *instruction;
 
         wrapped_instruction.a.number = self.wrap(wrapped_instruction.a.number);
@@ -34,7 +40,11 @@ impl MathExecutor {
     // Normalize `number` to a small value within range of `core_size` centered around 0.
     /// Example:
     /// If `coresize`=8000, this operation maps `number` to some value in [-4000, 3999]
-    fn wrap(&self, number: i32) -> i32 {
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "The subtraction operation is safe 👌"
+    )]
+    const fn wrap(&self, number: i32) -> i32 {
         let value = number.rem_euclid(self.core_size);
 
         // Return a small non-negative number as is.
@@ -46,15 +56,20 @@ impl MathExecutor {
         value - self.core_size
     }
 
-    pub fn increment(&self, number: i32) -> i32 {
+    pub const fn increment(&self, number: i32) -> i32 {
         self.add(number, 1)
     }
 
-    pub fn decrement(&self, number: i32) -> i32 {
+    pub const fn decrement(&self, number: i32) -> i32 {
         self.subtract(number, 1)
     }
 
-    pub fn do_arithmetic(&self, arithmetic: ArithmeticOperation, a: i32, b: i32) -> Option<i32> {
+    pub const fn do_arithmetic(
+        &self,
+        arithmetic: ArithmeticOperation,
+        a: i32,
+        b: i32,
+    ) -> Option<i32> {
         use ArithmeticOperation as AO;
 
         match arithmetic {
@@ -66,19 +81,19 @@ impl MathExecutor {
         }
     }
 
-    pub fn add(&self, a: i32, b: i32) -> i32 {
+    pub const fn add(&self, a: i32, b: i32) -> i32 {
         self.wrap(a.wrapping_add(b))
     }
 
-    pub fn subtract(&self, a: i32, b: i32) -> i32 {
+    pub const fn subtract(&self, a: i32, b: i32) -> i32 {
         self.wrap(a.wrapping_sub(b))
     }
 
-    fn multiply(&self, a: i32, b: i32) -> i32 {
+    const fn multiply(&self, a: i32, b: i32) -> i32 {
         self.wrap(a.wrapping_mul(b))
     }
 
-    fn divide(&self, a: i32, b: i32) -> Option<i32> {
+    const fn divide(&self, a: i32, b: i32) -> Option<i32> {
         if b == 0 {
             return None;
         }
@@ -86,7 +101,7 @@ impl MathExecutor {
         Some(self.wrap(a.div_euclid(b)))
     }
 
-    fn modulo(&self, a: i32, b: i32) -> Option<i32> {
+    const fn modulo(&self, a: i32, b: i32) -> Option<i32> {
         if b == 0 {
             return None;
         }

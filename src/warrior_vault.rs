@@ -28,7 +28,7 @@ impl Default for WarriorVault {
 }
 
 impl WarriorVault {
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.warriors.len()
     }
 
@@ -52,6 +52,10 @@ impl WarriorVault {
             .iter()
             .position(|warrior| &warrior.metadata.name == name)
         {
+            #[allow(
+                clippy::indexing_slicing,
+                reason = "`index` is guaranteed to be valid."
+            )]
             Some(index) => {
                 self.warriors[index] = warrior.clone();
             }

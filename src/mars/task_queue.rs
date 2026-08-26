@@ -51,8 +51,8 @@ impl TaskQueue {
         self.tasks.len()
     }
 
-    pub fn contains(&self, address: &Address) -> bool {
-        self.tasks.contains(address)
+    pub fn contains(&self, address: Address) -> bool {
+        self.tasks.contains(&address)
     }
 
     pub fn clear(&mut self) {

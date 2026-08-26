@@ -29,6 +29,7 @@ impl Modifier {
 
         let index = rng::rand_range(0, ALL_MODIFIERS.len());
 
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
         ALL_MODIFIERS[index]
     }
 }

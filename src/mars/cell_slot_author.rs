@@ -17,8 +17,8 @@ pub enum CellSlotAuthor {
 
 impl CellSlotAuthor {
     /// Check if this `CellSlotAuthor` points to a `Warrior`.
-    pub fn is_some(&self) -> bool {
-        *self != Self::None
+    pub fn is_some(self) -> bool {
+        self != Self::None
     }
 }
 
@@ -35,6 +35,8 @@ impl From<Option<WarriorId>> for CellSlotAuthor {
             Some(5) => Self::Warrior5,
             Some(6) => Self::Warrior6,
             Some(7) => Self::Warrior7,
+
+            #[allow(clippy::unreachable, reason = "The game only allows up to 8 warriors.")]
             Some(warrior_id) => unreachable!("Invalid warrior_id: {warrior_id}"),
         }
     }
@@ -42,7 +44,7 @@ impl From<Option<WarriorId>> for CellSlotAuthor {
 
 impl From<CellSlotAuthor> for Option<WarriorId> {
     /// Convert from `CellSlotAuthor` to `Option<WarriorId>`.
-    fn from(author: CellSlotAuthor) -> Option<WarriorId> {
+    fn from(author: CellSlotAuthor) -> Self {
         match author {
             CellSlotAuthor::None => None,
             CellSlotAuthor::Warrior0 => Some(0),

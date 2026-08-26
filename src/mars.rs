@@ -4,7 +4,6 @@ use crate::{
         address::Address,
         config::{Config, warrior_separation_strategy::WarriorSeparationStrategy},
         core::Core,
-        opcode_executor::*,
         task_outcome::TaskOutcome,
         task_queue::TaskQueue,
         warrior_context::WarriorContext,
@@ -40,11 +39,9 @@ pub struct Mars {
 impl Mars {
     /// Note: `ConfigManager` has validated these `warriors` can fit on the core with the given `config`.
     pub fn new(warriors: Vec<Warrior>, config: Config) -> Self {
-        let (core_width, core_height) = config.core_dimension.as_grid_dimensions();
+        let core = Core::new(&config);
 
-        let core = Core::new(core_width, core_height, config.core_initialization_strategy);
-
-        let contexts = warriors
+        let warrior_contexts = warriors
             .into_iter()
             .map(|warrior| {
                 WarriorContext::new(
@@ -56,7 +53,7 @@ impl Mars {
 
         let mut mars = Self {
             config,
-            warrior_contexts: contexts,
+            warrior_contexts,
             core,
             game_counter: 0,
             turn_counter: 0,
@@ -70,7 +67,10 @@ impl Mars {
         mars
     }
 
+    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn load_warriors_to_core_and_initialize_task_queues(&mut self) {
+        let core_size = self.config.core_dimension.as_size();
         let starting_positions = self.determine_starting_positions();
 
         for (warrior_id, context) in self.warrior_contexts.iter_mut().enumerate() {
@@ -78,14 +78,14 @@ impl Mars {
 
             // Copy instructions to core.
             for (i, instruction) in context.warrior.instructions.iter().enumerate() {
-                let position = (starting_position + i) % self.core.size();
+                let position = (starting_position + i) % core_size;
 
                 self.core
                     .wrap_and_load_instruction(position, instruction, Some(warrior_id));
             }
 
             // Push initial task.
-            let task = (starting_position + context.warrior.origin) % self.core.size();
+            let task = (starting_position + context.warrior.origin) % core_size;
             context.task_queue.push_if_not_full(task);
         }
     }
@@ -98,14 +98,19 @@ impl Mars {
     }
 
     fn determine_starting_positions_equal(&self) -> Vec<usize> {
+        let core_size = self.config.core_dimension.as_size();
         let num_warriors = self.warrior_contexts.len();
 
+        #[allow(clippy::arithmetic_side_effects, reason = "These numbers are small.")]
         (0..num_warriors)
-            .map(|warrior_id| self.core.size() / num_warriors * warrior_id)
+            .map(|warrior_id| core_size / num_warriors * warrior_id)
             .collect()
     }
 
+    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn determine_starting_positions_random(&self) -> Vec<usize> {
+        let core_size = self.config.core_dimension.as_size();
         let num_warriors = self.warrior_contexts.len();
 
         let instruction_lengths = self
@@ -122,7 +127,7 @@ impl Mars {
                 .sum::<usize>();
 
             let mut buckets = vec![self.config.min_distance_between_warriors; num_warriors];
-            let mut remaining_cells = self.core.size()
+            let mut remaining_cells = core_size
                 - total_instructions
                 - (self.config.min_distance_between_warriors * num_warriors);
 
@@ -156,6 +161,7 @@ impl Mars {
         }
         self.load_warriors_to_core_and_initialize_task_queues();
 
+        #[allow(clippy::arithmetic_side_effects, reason = "`game_counter` is small.")]
         if loading_next_game {
             self.game_counter += 1;
         }
@@ -167,6 +173,8 @@ impl Mars {
         self.winner = None;
     }
 
+    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+    #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
     pub fn step(&mut self) {
         if self.game_over {
             return;
@@ -192,6 +200,8 @@ impl Mars {
 
     /// Example: In a 4-player game with warriors [0, 1, 2, 3], if `current_warrior_id` is 1,
     /// then we would try to find the next warrior alive at [2, 3], then advance turn counter, then try to find next warrior alive at [0, 1].
+    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn find_next_warrior_alive(&mut self) -> Option<WarriorId> {
         // Check first pass - from next player to last player.
         if let Some(warrior_id) = (self.current_warrior_id + 1..self.warrior_contexts.len())
@@ -212,6 +222,8 @@ impl Mars {
             .find(|&warrior_id| self.warrior_contexts[warrior_id].is_alive())
     }
 
+    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn set_game_over_and_determine_winner(&mut self) {
         self.game_over = true;
 
@@ -360,32 +372,34 @@ impl Mars {
         core: &mut Core,
         warrior_id: WarriorId,
     ) -> TaskOutcome {
+        use opcode_executor as exec;
+
         match instruction.operation.opcode {
-            Opcode::DAT => exec_dat(instruction, address, core, warrior_id),
+            Opcode::DAT => exec::exec_dat(instruction, address, core, warrior_id),
 
-            Opcode::MOV => exec_mov(instruction, address, core, warrior_id),
+            Opcode::MOV => exec::exec_mov(instruction, address, core, warrior_id),
 
-            Opcode::ADD => exec_add(instruction, address, core, warrior_id),
-            Opcode::SUB => exec_sub(instruction, address, core, warrior_id),
-            Opcode::MUL => exec_mul(instruction, address, core, warrior_id),
-            Opcode::DIV => exec_div(instruction, address, core, warrior_id),
-            Opcode::MOD => exec_mod(instruction, address, core, warrior_id),
+            Opcode::ADD => exec::exec_add(instruction, address, core, warrior_id),
+            Opcode::SUB => exec::exec_sub(instruction, address, core, warrior_id),
+            Opcode::MUL => exec::exec_mul(instruction, address, core, warrior_id),
+            Opcode::DIV => exec::exec_div(instruction, address, core, warrior_id),
+            Opcode::MOD => exec::exec_mod(instruction, address, core, warrior_id),
 
-            Opcode::JMP => exec_jmp(instruction, address, core, warrior_id),
-            Opcode::JMZ => exec_jmz(instruction, address, core, warrior_id),
-            Opcode::JMN => exec_jmn(instruction, address, core, warrior_id),
-            Opcode::DJN => exec_djn(instruction, address, core, warrior_id),
+            Opcode::JMP => exec::exec_jmp(instruction, address, core, warrior_id),
+            Opcode::JMZ => exec::exec_jmz(instruction, address, core, warrior_id),
+            Opcode::JMN => exec::exec_jmn(instruction, address, core, warrior_id),
+            Opcode::DJN => exec::exec_djn(instruction, address, core, warrior_id),
 
-            Opcode::SPL => exec_spl(instruction, address, core, warrior_id),
+            Opcode::SPL => exec::exec_spl(instruction, address, core, warrior_id),
 
-            // `CMP` is just an alias for `SEQ`.
-            Opcode::CMP | Opcode::SEQ => exec_seq(instruction, address, core, warrior_id),
-            Opcode::SNE => exec_sne(instruction, address, core, warrior_id),
-            Opcode::SLT => exec_slt(instruction, address, core, warrior_id),
+            // Note: `CMP` is just an alias for `SEQ`.
+            Opcode::CMP | Opcode::SEQ => exec::exec_seq(instruction, address, core, warrior_id),
+            Opcode::SNE => exec::exec_sne(instruction, address, core, warrior_id),
+            Opcode::SLT => exec::exec_slt(instruction, address, core, warrior_id),
 
-            // `LDP` and `STP` are not implemented, so they are equivalent to `NOP`.
+            // Note: `LDP` and `STP` are currently not implemented, so they are equivalent to `NOP`.
             Opcode::LDP | Opcode::STP | Opcode::NOP => {
-                exec_nop(instruction, address, core, warrior_id)
+                exec::exec_nop(instruction, address, core, warrior_id)
             }
         }
     }

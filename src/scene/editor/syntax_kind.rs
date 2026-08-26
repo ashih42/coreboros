@@ -10,7 +10,7 @@ pub enum SyntaxKind {
 }
 
 impl SyntaxKind {
-    pub fn as_text_format(&self) -> egui::TextFormat {
+    pub fn as_text_format(self) -> egui::TextFormat {
         match self {
             Self::AddressingMode => egui::TextFormat {
                 font_id: egui::FontId::new(16.0, egui::FontFamily::Monospace),

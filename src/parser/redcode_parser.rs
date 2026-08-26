@@ -55,6 +55,10 @@ impl RedcodeParser {
                 Rule::org_instruction => org_instruction = Some(Self::org_instruction(child)),
                 Rule::end_instruction => end_instruction = Some(Self::end_instruction(child)),
                 Rule::comment => comment = Some(Self::comment(child)),
+                #[allow(
+                    clippy::unreachable,
+                    reason = "The grammar guarantees only these rules may occur here."
+                )]
                 _ => unreachable!(),
             }
         }
@@ -158,6 +162,10 @@ impl RedcodeParser {
                 let expr = Self::expr(first_node);
                 OperandBuffer::new(None, expr)
             }
+            #[allow(
+                clippy::unreachable,
+                reason = "The grammar guarantees only these rules may occur here."
+            )]
             _ => unreachable!(),
         }
     }
@@ -191,7 +199,7 @@ pub fn parse_redcode(redcode: &str) -> Result<Vec<RedcodeLine>> {
     Ok(lines)
 }
 
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::too_many_lines)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -200,14 +208,14 @@ mod tests {
     #[allow(unused)]
     fn print_result(result: &Result<Vec<RedcodeLine>>) {
         match &result {
-            Ok(lines) => println!("lines:\n{:#?}", lines),
-            Err(err) => println!("error:\n{}", err),
+            Ok(lines) => println!("lines:\n{lines:#?}"),
+            Err(err) => println!("error:\n{err}"),
         }
     }
 
     #[test]
     fn test_parse_valid_instructions_and_label_definitions() {
-        let redcode = indoc! {r#"
+        let redcode = indoc! {r"
             DAT.F   #0, #0
             MOV.I   $1, >2
             ADD.AB  #5, @10
@@ -227,7 +235,7 @@ mod tests {
             adder50
             adder
             add     er
-        "#};
+        "};
 
         let result = parse_redcode(redcode);
         // print_result(&result);
@@ -236,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_parse_valid_pseudoinstructions_and_label_definitions() {
-        let redcode = indoc! {r#"
+        let redcode = indoc! {r"
             ORGdoge
             org     dog+5
             END3    
@@ -244,7 +252,7 @@ mod tests {
             ender
             end     10
             end
-        "#};
+        "};
 
         let result = parse_redcode(redcode);
         // print_result(&result);
@@ -253,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_parse_all_combinations_of_label_definitions_instruction_comment() {
-        let redcode = indoc! {r#"
+        let redcode = indoc! {r"
                                              
                                     ;comment1
                         dat 2                
@@ -262,7 +270,7 @@ mod tests {
             hello5                  ;comment5
             hello6      dat 6                
             hello7      dat 7       ;comment7
-        "#};
+        "};
 
         let lines = parse_redcode(redcode).unwrap();
         assert_eq!(lines.len(), 9);

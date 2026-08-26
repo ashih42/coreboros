@@ -75,6 +75,10 @@ impl WarriorBuilder {
         let end_index = lines.iter().position(|line| line.end_instruction.is_some());
 
         if let Some(index) = end_index {
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "This is safe because there is a character limit on the user input redcode."
+            )]
             lines.truncate(index + 1);
         }
     }
@@ -110,6 +114,7 @@ impl WarriorBuilder {
 
         #[allow(
             clippy::cast_sign_loss,
+            clippy::as_conversions,
             reason = "`origin` has been validated to be non-negative."
         )]
         let warrior = Warrior::new(self.redcode, self.metadata, instructions, origin as usize);
@@ -122,7 +127,8 @@ impl WarriorBuilder {
         #[allow(
             clippy::cast_possible_truncation,
             clippy::cast_possible_wrap,
-            reason = "`instructions` length will be capped."
+            clippy::as_conversions,
+            reason = "Instruction length will be reasonably small because user input length is limited."
         )]
         let instruction_size = instructions.len() as i32;
 
@@ -143,6 +149,10 @@ impl WarriorBuilder {
             }
 
             // Update instruction line counter.
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "Instruction length will be reasonably small because user input length is limited."
+            )]
             if line.instruction.is_some() {
                 current_instruction_line_number += 1;
             }
@@ -214,10 +224,13 @@ impl WarriorBuilder {
         label_dictionary: &LabelDictionary,
     ) -> Result<()> {
         // Build the concrete `instruction`.
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "Instruction length will be reasonably small because user input length is limited."
+        )]
         if let Some(instruction_builder) = line.instruction {
             let instruction =
                 instruction_builder.build(label_dictionary, *current_instruction_line_number)?;
-            // .with_context(|| "Error on line {line.text_line_number}")?;
 
             instructions.push(instruction);
             *current_instruction_line_number += 1;

@@ -33,7 +33,7 @@ impl Instruction {
         Self { operation, a, b }
     }
 
-    pub fn dat(number: i32) -> Self {
+    pub const fn dat(number: i32) -> Self {
         Self {
             operation: Operation {
                 opcode: Opcode::DAT,
@@ -60,6 +60,12 @@ impl Instruction {
         )
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::as_conversions,
+        reason = "These conversions are safe because the numbers are small."
+    )]
     pub fn random_instruction_wrapped(core_size: usize) -> Self {
         let opcode = Opcode::random_opcode();
         let modifier = Modifier::random_modifier();

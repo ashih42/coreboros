@@ -16,7 +16,7 @@ use crate::{
         arena::{playback_manager::PlaybackManager, playback_speed::PlaybackSpeed},
         scene_change::SceneChange,
     },
-    warrior::warrior_id::WarriorId,
+    warrior::warrior_id::{WarriorId, WarriorIdDisplay as _},
     warrior_queue::WarriorQueue,
 };
 
@@ -45,6 +45,7 @@ impl Scene for Arena {
 }
 
 impl Arena {
+    #[must_use]
     pub fn new(warrior_queue: WarriorQueue, config: Config) -> Self {
         Self {
             mars: Mars::new(warrior_queue.into(), config),
@@ -156,36 +157,46 @@ impl Arena {
         }
     }
 
-    fn move_selected_address_left(&mut self) {
-        let new_address =
-            (self.selected_address + self.mars.core.size() - 1) % self.mars.core.size();
+    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    const fn move_selected_address_left(&mut self) {
+        let core_size = self.mars.config.core_dimension.as_size();
 
+        let new_address = (self.selected_address + core_size - 1) % core_size;
         self.set_selected_address(new_address);
     }
 
-    fn move_selected_address_right(&mut self) {
-        let new_address = (self.selected_address + 1) % self.mars.core.size();
+    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    const fn move_selected_address_right(&mut self) {
+        let core_size = self.mars.config.core_dimension.as_size();
 
+        let new_address = (self.selected_address + 1) % core_size;
         self.set_selected_address(new_address);
     }
 
-    fn move_selected_address_up(&mut self) {
-        let new_address = (self.selected_address + self.mars.core.size() - self.mars.core.width)
-            % self.mars.core.size();
+    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    const fn move_selected_address_up(&mut self) {
+        let core_size = self.mars.config.core_dimension.as_size();
+        let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
+        let new_address = (self.selected_address + core_size - width) % core_size;
         self.set_selected_address(new_address);
     }
 
-    fn move_selected_address_down(&mut self) {
-        let new_address = (self.selected_address + self.mars.core.width) % self.mars.core.size();
+    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    const fn move_selected_address_down(&mut self) {
+        let core_size = self.mars.config.core_dimension.as_size();
+        let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
+        let new_address = (self.selected_address + width) % core_size;
         self.set_selected_address(new_address);
     }
 
     fn zoom_to_current_warrior_task(&mut self) {
-        if let Some(address) = self.mars.warrior_contexts[self.mars.current_warrior_id]
-            .task_queue
-            .peek()
+        if let Some(address) = self
+            .mars
+            .warrior_contexts
+            .get(self.mars.current_warrior_id)
+            .and_then(|context| context.task_queue.peek())
         {
             self.selected_address = address;
         }
@@ -193,18 +204,26 @@ impl Arena {
 
     /// Update the selected address AND ALSO set flag to reset scrollbar.
     #[inline]
-    fn set_selected_address(&mut self, address: Address) {
+    const fn set_selected_address(&mut self, address: Address) {
         self.selected_address = address;
         self.should_reset_scrollbar_in_coredump = true;
     }
 
     /// Process mouse events.
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::as_conversions,
+        reason = "These casts are valid 👌"
+    )]
     fn process_mouse_events(&mut self, camera: &Camera2D) {
         let game_area_width = Self::get_game_area_width();
         let game_area_height = Self::get_game_area_height();
 
-        let num_cells_per_row = self.mars.core.width;
-        let num_cells_per_column = self.mars.core.height;
+        let (width, height) = self.mars.config.core_dimension.as_grid_dimensions();
+        let num_cells_per_row = width;
+        let num_cells_per_column = height;
 
         let cell_width = game_area_width / (num_cells_per_row as f32);
         let cell_height = game_area_height / (num_cells_per_column as f32);
@@ -245,6 +264,11 @@ impl Arena {
 
     /// Configure the camera for the game area.
     /// This must be done on every frame because window size may change at any time.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::as_conversions,
+        reason = "These casts are valid."
+    )]
     fn set_game_camera() -> Camera2D {
         // Calculate dynamic dimensions for the center gameplay area
         let game_area_width = Self::get_game_area_width();
@@ -274,12 +298,18 @@ impl Arena {
     }
 
     /// Draw the entire core to the game area.
-    fn draw_game_area(&mut self) {
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::as_conversions,
+        reason = "These casts are valid 👌"
+    )]
+    fn draw_game_area(&self) {
         let game_area_width = Self::get_game_area_width();
         let game_area_height = Self::get_game_area_height();
 
-        let num_cells_per_row = self.mars.core.width;
-        let num_cells_per_column = self.mars.core.height;
+        let (width, height) = self.mars.config.core_dimension.as_grid_dimensions();
+        let num_cells_per_row = width;
+        let num_cells_per_column = height;
 
         let cell_width = game_area_width / (num_cells_per_row as f32);
         let cell_height = game_area_height / (num_cells_per_column as f32);
@@ -289,7 +319,7 @@ impl Arena {
             for y in 0..num_cells_per_column {
                 let address = self.get_address(x, y);
 
-                let cell = self.mars.core.get_cell_with_wraparound(address);
+                let cell = self.mars.core.get_cell(address);
                 let cell_color = color::get_mq_color(cell.operation_author.into());
 
                 let x = (x as f32) * cell_width;
@@ -319,6 +349,7 @@ impl Arena {
             let radius = 5.0;
             let thickness = 1.0;
 
+            #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
             for &address in self.mars.warrior_contexts[warrior_id].task_queue.iter() {
                 let (x, y) = self.address_to_game_area_x_y(address);
 
@@ -334,7 +365,12 @@ impl Arena {
             let radius = 5.0;
             let thickness = 3.0;
 
-            if let Some(address) = self.mars.warrior_contexts[warrior_id].task_queue.peek() {
+            if let Some(address) = self
+                .mars
+                .warrior_contexts
+                .get(warrior_id)
+                .and_then(|context| context.task_queue.peek())
+            {
                 let (x, y) = self.address_to_game_area_x_y(address);
 
                 draw_circle(x, y, radius, warrior_color);
@@ -343,18 +379,23 @@ impl Arena {
         }
     }
 
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::as_conversions,
+        clippy::arithmetic_side_effects,
+        reason = "These operations are valid 👌"
+    )]
     fn address_to_game_area_x_y(&self, address: usize) -> (f32, f32) {
         let game_area_width = Self::get_game_area_width();
         let game_area_height = Self::get_game_area_height();
 
-        let num_cells_per_row = self.mars.core.width;
-        let num_cells_per_column = self.mars.core.height;
+        let (width, height) = self.mars.config.core_dimension.as_grid_dimensions();
 
-        let cell_width = game_area_width / (num_cells_per_row as f32);
-        let cell_height = game_area_height / (num_cells_per_column as f32);
+        let cell_width = game_area_width / (width as f32);
+        let cell_height = game_area_height / (height as f32);
 
-        let y = address / self.mars.core.width;
-        let x = address % self.mars.core.width;
+        let y = address / width;
+        let x = address % width;
 
         let rect_y = (y as f32) * cell_height;
         let rect_x = (x as f32) * cell_width;
@@ -384,10 +425,11 @@ impl Arena {
         const SUBHEADING_FONT_SIZE: f32 = 20.0;
 
         // Keep Mars logic in 0-based counting, but display these numbers in 1-based counting.
-        let game_str = renderer.usize_to_str(self.mars.game_counter + 1);
-        let turn_str = renderer.usize_to_str(self.mars.turn_counter + 1);
+        let game_str = renderer.usize_plus_1_to_str(self.mars.game_counter);
+        let turn_str = renderer.usize_plus_1_to_str(self.mars.turn_counter);
+        let cycle_str = renderer.usize_plus_1_to_str(self.mars.cycle_counter);
+
         let turn_limit_str = renderer.usize_to_str(self.mars.config.turn_limit);
-        let cycle_str = renderer.usize_to_str(self.mars.cycle_counter + 1);
 
         egui::SidePanel::left("left_sidebar")
             .exact_width(LEFT_SIDEBAR_WIDTH)
@@ -443,7 +485,7 @@ impl Arena {
 
             if let Some(winner_id) = self.mars.winner {
                 let color = color::get_egui_color32(Some(winner_id));
-                let winner_id_str = renderer.usize_to_str(winner_id + 1);
+                let winner_id_str = renderer.usize_to_str(winner_id.as_display_id());
 
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("Winner:").size(WINNER_FONT_SIZE));
@@ -461,6 +503,7 @@ impl Arena {
 
     /// Draw a frame to show a warrior's details.
     fn draw_warrior_info(&self, warrior_id: WarriorId, ui: &mut egui::Ui, renderer: &Renderer) {
+        #[allow(clippy::indexing_slicing, reason = "This index is valid 👌")]
         let warrior_context = &self.mars.warrior_contexts[warrior_id];
 
         let warrior_name = &warrior_context.warrior.metadata.name;
@@ -510,7 +553,10 @@ impl Arena {
 
                     // Draw "Warrior X".
                     ui.colored_label(egui::Color32::WHITE, "Warrior");
-                    ui.colored_label(egui::Color32::WHITE, renderer.usize_to_str(warrior_id + 1));
+                    ui.colored_label(
+                        egui::Color32::WHITE,
+                        renderer.usize_to_str(warrior_id.as_display_id()),
+                    );
                 });
 
                 ui.add_space(2.0);
@@ -642,6 +688,8 @@ impl Arena {
     fn draw_core_dump(&mut self, ui: &mut egui::Ui, renderer: &Renderer) {
         const NUM_ROWS_IN_COREDUMP: usize = 40;
 
+        let core_size = self.mars.config.core_dimension.as_size();
+
         egui::ScrollArea::vertical().show(ui, |ui| {
             if self.should_reset_scrollbar_in_coredump {
                 ui.scroll_to_cursor(Some(egui::Align::TOP));
@@ -650,8 +698,9 @@ impl Arena {
 
             let slot_width = (ui.available_width() - 40.0) / 4.0;
 
+            #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
             for i in 0..NUM_ROWS_IN_COREDUMP {
-                let address = (self.selected_address + i) % self.mars.core.size();
+                let address = (self.selected_address + i) % core_size;
                 let cell = self.mars.core.get_cell(address);
 
                 ui.horizontal(|ui| {
@@ -668,7 +717,7 @@ impl Arena {
 
                     // Draw a slot showing the operation.
                     Self::draw_operation_slot(
-                        &cell.instruction.operation,
+                        cell.instruction.operation,
                         color::get_egui_color32(cell.operation_author.into()),
                         slot_width,
                         ui,
@@ -676,7 +725,7 @@ impl Arena {
 
                     // Draw a slot showing the A operand.
                     Self::draw_operand_slot(
-                        &cell.instruction.a,
+                        cell.instruction.a,
                         color::get_egui_color32(cell.operation_author.into()),
                         color::get_egui_color32(cell.a_author.into()),
                         slot_width - 10.0,
@@ -686,7 +735,7 @@ impl Arena {
 
                     // Draw a slot showing the B operand.
                     Self::draw_operand_slot(
-                        &cell.instruction.b,
+                        cell.instruction.b,
                         color::get_egui_color32(cell.operation_author.into()),
                         color::get_egui_color32(cell.b_author.into()),
                         slot_width - 10.0,
@@ -722,7 +771,7 @@ impl Arena {
 
     /// Draw a slot showing the operation (opcode.modifier) of a row in the core dump.
     fn draw_operation_slot(
-        operation: &Operation,
+        operation: Operation,
         bg_color: egui::Color32,
         slot_width: f32,
         ui: &mut egui::Ui,
@@ -747,7 +796,7 @@ impl Arena {
 
     /// Draw a slot showing the an operand (addressing mode and number) of a row in the core dump.
     fn draw_operand_slot(
-        operand: &Operand,
+        operand: Operand,
         addressing_mode_bg_color: egui::Color32,
         number_bg_color: egui::Color32,
         slot_width: f32,
@@ -810,9 +859,11 @@ impl Arena {
         const ICON_WIDTH: f32 = 20.0;
 
         // If the current warrior's current task is at this address, draw a tinted warrior icon.
-        if let Some(task) = self.mars.warrior_contexts[self.mars.current_warrior_id]
-            .task_queue
-            .peek()
+        if let Some(task) = self
+            .mars
+            .warrior_contexts
+            .get(self.mars.current_warrior_id)
+            .and_then(|context| context.task_queue.peek())
             && task == address
             && let Some(warrior_icon) = renderer
                 .texture_manager
@@ -827,17 +878,15 @@ impl Arena {
             return;
         }
 
-        // Otherwise, if any warrior has a task at this address, draw an untinted warrior icon.
-        let occupying_warrior_id = self
+        if let Some(warrior_id) = self
             .get_warrior_rendering_order()
             .rev()
             .find(|&warrior_id| {
-                self.mars.warrior_contexts[warrior_id]
-                    .task_queue
-                    .contains(&address)
-            });
-
-        if let Some(warrior_id) = occupying_warrior_id
+                self.mars
+                    .warrior_contexts
+                    .get(warrior_id)
+                    .is_some_and(|context| context.task_queue.contains(address))
+            })
             && let Some(warrior_icon) = renderer.texture_manager.get_warrior_icon(warrior_id)
         {
             ui.add(egui::Image::new(warrior_icon).max_width(ICON_WIDTH));
@@ -862,13 +911,16 @@ impl Arena {
 
     /// Convert `(x, y)` to an address value to index into the `Core`.
     #[inline]
+    #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
     const fn get_address(&self, x: usize, y: usize) -> usize {
-        y * self.mars.core.width + x
+        let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
+
+        y * width + x
     }
 
     #[inline]
     fn get_warrior_rendering_order(&self) -> impl DoubleEndedIterator<Item = WarriorId> {
-        _get_warrior_rendering_order(
+        generate_warrior_rendering_order(
             self.mars.warrior_contexts.len(),
             self.mars.current_warrior_id,
         )
@@ -880,7 +932,8 @@ impl Arena {
 ///
 /// Example: In a 4 player game, if it is currently player 2's turn, then the rendering order is [3, 0, 1, 2].
 #[inline]
-fn _get_warrior_rendering_order(
+#[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
+fn generate_warrior_rendering_order(
     num_warriors: usize,
     current_warrior_id: WarriorId,
 ) -> impl DoubleEndedIterator<Item = WarriorId> {
@@ -892,15 +945,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_warrior_rendering_order() {
-        assert!(_get_warrior_rendering_order(4, 0).eq([1, 2, 3, 0]));
-        assert!(_get_warrior_rendering_order(4, 1).eq([2, 3, 0, 1]));
-        assert!(_get_warrior_rendering_order(4, 2).eq([3, 0, 1, 2]));
-        assert!(_get_warrior_rendering_order(4, 3).eq([0, 1, 2, 3]));
+    fn test_generate_warrior_rendering_order() {
+        assert!(generate_warrior_rendering_order(4, 0).eq([1, 2, 3, 0]));
+        assert!(generate_warrior_rendering_order(4, 1).eq([2, 3, 0, 1]));
+        assert!(generate_warrior_rendering_order(4, 2).eq([3, 0, 1, 2]));
+        assert!(generate_warrior_rendering_order(4, 3).eq([0, 1, 2, 3]));
 
-        assert!(_get_warrior_rendering_order(2, 0).eq([1, 0]));
-        assert!(_get_warrior_rendering_order(2, 1).eq([0, 1]));
+        assert!(generate_warrior_rendering_order(2, 0).eq([1, 0]));
+        assert!(generate_warrior_rendering_order(2, 1).eq([0, 1]));
 
-        assert!(_get_warrior_rendering_order(1, 0).eq([0]));
+        assert!(generate_warrior_rendering_order(1, 0).eq([0]));
     }
 }

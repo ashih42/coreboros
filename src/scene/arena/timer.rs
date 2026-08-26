@@ -6,7 +6,7 @@ pub struct Timer {
 }
 
 impl Timer {
-    pub fn new(period_in_seconds: f64) -> Self {
+    pub const fn new(period_in_seconds: f64) -> Self {
         Self {
             period_in_seconds,
             start_time: 0.0,
@@ -19,7 +19,7 @@ impl Timer {
         self.active = true;
     }
 
-    pub fn stop(&mut self) {
+    pub const fn stop(&mut self) {
         self.active = false;
     }
 
@@ -40,12 +40,12 @@ impl Timer {
         false
     }
 
-    pub fn set_period(&mut self, period_in_seconds: f64) {
+    pub const fn set_period(&mut self, period_in_seconds: f64) {
         self.period_in_seconds = period_in_seconds;
     }
 
     #[inline]
-    pub fn is_active(&self) -> bool {
+    pub const fn is_active(&self) -> bool {
         self.active
     }
 }

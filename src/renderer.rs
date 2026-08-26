@@ -29,8 +29,23 @@ impl Default for Renderer {
 
 impl Renderer {
     #[inline]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::as_conversions,
+        reason = "This conversion is safe because `num` is small."
+    )]
     pub fn usize_to_str(&self, num: usize) -> &str {
         self.number_str_cache.i32_to_str(num as i32)
+    }
+
+    #[inline]
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "This expression is safe because `num` is small."
+    )]
+    pub fn usize_plus_1_to_str(&self, num: usize) -> &str {
+        self.usize_to_str(num + 1)
     }
 
     #[inline]

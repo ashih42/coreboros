@@ -8,7 +8,7 @@ use crate::{
     mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     renderer::Renderer,
     scene::{Scene, editor::text_editor::TextEditor, scene_change::SceneChange},
-    warrior::Warrior,
+    warrior::{Warrior, warrior_id::WarriorIdDisplay as _},
     warrior_queue::WarriorQueue,
     warrior_vault::WarriorVault,
 };
@@ -18,6 +18,7 @@ mod syntax_kind;
 mod text_editor;
 
 pub struct Editor {
+    #[allow(clippy::struct_field_names, reason = "This is a good name 👌")]
     text_editor: TextEditor,
     console_text: String,
 
@@ -48,6 +49,7 @@ const LEFT_SIDEBAR_WIDTH: f32 = 250.0;
 const RIGHT_SIDEBAR_WIDTH: f32 = 300.0;
 
 impl Editor {
+    #[must_use]
     pub fn new(warrior_queue: WarriorQueue) -> Self {
         Self {
             text_editor: TextEditor::default(),
@@ -174,6 +176,8 @@ impl Editor {
     }
 
     fn draw_text_editor(&mut self, ui: &mut egui::Ui) {
+        const INPUT_CHAR_LIMIT: usize = 100_000;
+
         let mut apply_syntax_highlighting = |ui: &egui::Ui, redcode: &str, _wrap_width: f32| {
             TextEditor::get_cached_or_build_new_galley(
                 ui,
@@ -190,6 +194,7 @@ impl Editor {
                     egui::TextEdit::multiline(&mut self.text_editor.input_text)
                         .min_size(ui.available_size())
                         .desired_width(f32::INFINITY)
+                        .char_limit(INPUT_CHAR_LIMIT)
                         .layouter(&mut apply_syntax_highlighting),
                 )
             });
@@ -225,7 +230,7 @@ impl Editor {
                 self.console_text = format!("Compiled \"{}\" successfully.", warrior.metadata.name);
                 self.current_warrior = Some(warrior);
             }
-            Err(err) => self.console_text = format!("{:?}", err),
+            Err(err) => self.console_text = format!("{err:?}"),
         }
     }
 
@@ -251,7 +256,7 @@ impl Editor {
         });
     }
 
-    fn draw_left_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &mut GameContext) {
+    fn draw_left_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &GameContext) {
         egui::SidePanel::left("left_navigation")
             .exact_width(LEFT_SIDEBAR_WIDTH)
             .resizable(false)
@@ -406,7 +411,7 @@ impl Editor {
                         ui.colored_label(egui::Color32::WHITE, "Warrior");
                         ui.colored_label(
                             egui::Color32::WHITE,
-                            renderer.usize_to_str(warrior_id + 1),
+                            renderer.usize_to_str(warrior_id.as_display_id()),
                         );
                     });
 
@@ -458,7 +463,7 @@ impl Editor {
                         .clicked()
                     {
                         ui.data_mut(|d| {
-                            d.insert_persisted(tab_state_id, RightSidebarTab::WarriorVault)
+                            d.insert_persisted(tab_state_id, RightSidebarTab::WarriorVault);
                         });
                     }
 
@@ -484,7 +489,7 @@ impl Editor {
                             );
                         }
                         RightSidebarTab::Config => {
-                            self.draw_config_page(
+                            Self::draw_config_page(
                                 ui,
                                 &game_ctx.renderer,
                                 &mut game_ctx.config_manager,
@@ -496,7 +501,7 @@ impl Editor {
     }
 
     fn load_current_warrior(&mut self, warrior: Warrior) {
-        self.text_editor.input_text = warrior.redcode.clone();
+        self.text_editor.input_text.clone_from(&warrior.redcode);
         self.text_editor.update_line_numbers_col_if_changed();
         self.current_warrior = Some(warrior);
         self.console_text.clear();
@@ -565,7 +570,6 @@ impl Editor {
     }
 
     fn draw_config_page(
-        &mut self,
         ui: &mut egui::Ui,
         renderer: &Renderer,
         config_manager: &mut ConfigManager,

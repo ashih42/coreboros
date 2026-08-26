@@ -28,7 +28,7 @@ impl Default for SyntaxHighlighter {
 
         #[allow(clippy::expect_used, reason = "Regex is valid 👌")]
         let comment_regex =
-            Regex::new(r#"(?m);.*$"#).expect("`comment_regex` regex pattern should be valid");
+            Regex::new(r"(?m);.*$").expect("`comment_regex` regex pattern should be valid");
 
         let rules = vec![
             (operation_regex, SyntaxKind::Operation),
@@ -42,6 +42,11 @@ impl Default for SyntaxHighlighter {
 }
 
 impl SyntaxHighlighter {
+    #[allow(
+        clippy::indexing_slicing,
+        clippy::string_slice,
+        reason = "Indices are valid 👌"
+    )]
     pub fn highlight_text(&self, text: &str) -> egui::text::LayoutJob {
         let mut layout_job = egui::text::LayoutJob::default();
 
@@ -59,14 +64,13 @@ impl SyntaxHighlighter {
             }
         }
 
-        // Merge same adjacent syntax_kinds into one TextFormat entry in `layout_job`.
         if !text.is_empty() {
             let mut start = 0;
             let mut current_syntax = syntax_kinds[0];
 
+            // Merge blocks of the same adjacent syntax_kinds into TextFormat entries in `layout_job`.
             for (i, &syntax) in syntax_kinds.iter().enumerate() {
                 if syntax != current_syntax {
-                    // Append the chunk up to this point
                     layout_job.append(&text[start..i], 0.0, current_syntax.as_text_format());
                     start = i;
                     current_syntax = syntax;
@@ -77,7 +81,6 @@ impl SyntaxHighlighter {
         }
 
         layout_job.wrap.max_width = f32::INFINITY;
-
         layout_job
     }
 }

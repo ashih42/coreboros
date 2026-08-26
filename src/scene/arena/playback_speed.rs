@@ -21,7 +21,7 @@ pub enum PlaybackSpeed {
 
 impl PlaybackSpeed {
     #[inline]
-    pub fn as_period_in_seconds(&self) -> f64 {
+    pub const fn as_period_in_seconds(self) -> f64 {
         match self {
             Self::Normal => 1.0,
             Self::FastForward2X => 0.5,

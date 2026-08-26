@@ -15,3 +15,16 @@ pub struct Config {
     pub warrior_separation_strategy: WarriorSeparationStrategy,
     pub min_distance_between_warriors: usize,
 }
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            core_dimension: CoreDimension::Nano,
+            core_initialization_strategy: CoreInitializationStrategy::FillDat00,
+            task_queue_capacity: 64,
+            turn_limit: 2000,
+            warrior_separation_strategy: WarriorSeparationStrategy::Equal,
+            min_distance_between_warriors: 10,
+        }
+    }
+}

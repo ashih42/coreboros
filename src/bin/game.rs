@@ -1,3 +1,8 @@
+#![allow(
+    clippy::future_not_send,
+    reason = "This game will run as a single-threaded WASM app."
+)]
+
 use macroquad::window::Conf;
 
 use coreboros::{game::Game, rng};

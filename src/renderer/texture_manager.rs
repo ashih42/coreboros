@@ -30,8 +30,11 @@ macro_rules! init_tex {
             let mq_image = Image::from_file_with_format(bytes, Some(ImageFormat::Png)).unwrap();
 
             // Convert macroquad image to egui image.
-            let size = [mq_image.width as usize, mq_image.height as usize];
-            let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &mq_image.bytes);
+            #[allow(clippy::as_conversions, reason = "These conversions are safe 👌")]
+            let color_image = egui::ColorImage::from_rgba_unmultiplied(
+                [mq_image.width as usize, mq_image.height as usize],
+                &mq_image.bytes,
+            );
 
             // Register this egui image with the UI context.
             $egui_ctx.load_texture(stringify!($name), color_image, Default::default())
@@ -56,7 +59,7 @@ impl TextureManager {
         init_tex!(self, egui_ctx, digit_8);
     }
 
-    pub fn get_warrior_icon(&self, warrior_id: WarriorId) -> Option<&egui::TextureHandle> {
+    pub const fn get_warrior_icon(&self, warrior_id: WarriorId) -> Option<&egui::TextureHandle> {
         match warrior_id {
             0 => self.digit_1.as_ref(),
             1 => self.digit_2.as_ref(),

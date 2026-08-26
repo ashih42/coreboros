@@ -35,7 +35,7 @@ impl From<WarriorQueue> for Vec<Warrior> {
 }
 
 impl WarriorQueue {
-    pub fn get_capacity(&self) -> usize {
+    pub const fn get_capacity(&self) -> usize {
         self.warriors.capacity()
     }
 
@@ -43,11 +43,11 @@ impl WarriorQueue {
         (1..=self.warriors.capacity()).contains(&self.warriors.len())
     }
 
-    pub fn is_full(&self) -> bool {
+    pub const fn is_full(&self) -> bool {
         self.warriors.len() == self.warriors.capacity()
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.warriors.len()
     }
 
@@ -69,14 +69,22 @@ impl WarriorQueue {
         }
     }
 
-    /// Invariant: `index` is valid.
+    /// Note: `index` must be valid.
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "The expression is guaranteed to be valid."
+    )]
     pub fn move_up(&mut self, index: usize) {
         if index >= 1 {
             self.warriors.swap(index, index - 1);
         }
     }
 
-    /// Invariant: `index` is valid.
+    /// Note: `index` must be valid.
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "The expression is guaranteed to be valid."
+    )]
     pub fn move_down(&mut self, index: usize) {
         if index + 1 < self.warriors.len() {
             self.warriors.swap(index, index + 1);

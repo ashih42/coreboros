@@ -7,7 +7,7 @@ pub struct WarriorContext {
 }
 
 impl WarriorContext {
-    pub fn new(warrior: Warrior, task_queue: TaskQueue) -> Self {
+    pub const fn new(warrior: Warrior, task_queue: TaskQueue) -> Self {
         Self {
             warrior,
             task_queue,

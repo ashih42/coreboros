@@ -14,10 +14,10 @@ use crate::{
 /// `DAT` - Data.
 /// Executing this instruction kills the process.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#dat-data>
-pub fn exec_dat(
+pub const fn exec_dat(
     _instruction: &Instruction,
     _current_address: Address,
-    _core: &mut Core,
+    _core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     die()
@@ -33,9 +33,9 @@ pub fn exec_mov(
     warrior_id: WarriorId,
 ) -> TaskOutcome {
     let (src_instruction, src_a, src_b) =
-        core.resolve_instruction_a_b(current_address, &instruction.a);
+        core.resolve_instruction_a_b(current_address, instruction.a);
 
-    let dest_address = core.resolve_operand_address(&instruction.b, current_address);
+    let dest_address = core.resolve_operand_address(instruction.b, current_address);
     let dest_cell = core.get_cell_mut(dest_address);
 
     match instruction.operation.modifier {
@@ -166,10 +166,10 @@ pub fn exec_mod(
 pub fn exec_jmp(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
-    do_jump(&instruction.a, current_address, core)
+    do_jump(instruction.a, current_address, core)
 }
 
 /// `JMZ` - Jump If Zero.
@@ -178,12 +178,12 @@ pub fn exec_jmp(
 pub fn exec_jmz(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     use Modifier::{A, AB, B, BA, F, I, X};
 
-    let (_, cond_a, cond_b) = core.resolve_instruction_a_b(current_address, &instruction.b);
+    let (_, cond_a, cond_b) = core.resolve_instruction_a_b(current_address, instruction.b);
 
     let should_jump = match instruction.operation.modifier {
         A | BA => cond_a == 0,
@@ -192,7 +192,7 @@ pub fn exec_jmz(
     };
 
     if should_jump {
-        return do_jump(&instruction.a, current_address, core);
+        return do_jump(instruction.a, current_address, core);
     }
 
     live(current_address, 1, core)
@@ -205,12 +205,12 @@ pub fn exec_jmz(
 pub fn exec_jmn(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     use Modifier::{A, AB, B, BA, F, I, X};
 
-    let (_, cond_a, cond_b) = core.resolve_instruction_a_b(current_address, &instruction.b);
+    let (_, cond_a, cond_b) = core.resolve_instruction_a_b(current_address, instruction.b);
 
     let should_jump = match instruction.operation.modifier {
         A | BA => cond_a != 0,
@@ -219,7 +219,7 @@ pub fn exec_jmn(
     };
 
     if should_jump {
-        return do_jump(&instruction.a, current_address, core);
+        return do_jump(instruction.a, current_address, core);
     }
 
     live(current_address, 1, core)
@@ -237,9 +237,9 @@ pub fn exec_djn(
 ) -> TaskOutcome {
     use Modifier::{A, AB, B, BA, F, I, X};
 
-    let cond_address = core.resolve_operand_address(&instruction.b, current_address);
+    let cond_address = core.resolve_operand_address(instruction.b, current_address);
 
-    let (_, mut cond_a, mut cond_b) = core.resolve_instruction_a_b(current_address, &instruction.b);
+    let (_, mut cond_a, mut cond_b) = core.resolve_instruction_a_b(current_address, instruction.b);
 
     // Decrement the copied numbers.
     match instruction.operation.modifier {
@@ -288,7 +288,7 @@ pub fn exec_djn(
 
     if should_jump {
         // Cannot use the cached `instruction.a`, because its core value might have been modified from the decrement earlier!
-        let target_operand = &core.get_cell(current_address).instruction.a;
+        let target_operand = core.get_cell(current_address).instruction.a;
         return do_jump(target_operand, current_address, core);
     }
 
@@ -302,10 +302,10 @@ pub fn exec_djn(
 pub fn exec_spl(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
-    let target_address = core.resolve_operand_address(&instruction.a, current_address);
+    let target_address = core.resolve_operand_address(instruction.a, current_address);
     let next_address = core.resolve_address(current_address, 1);
 
     TaskOutcome::Spawned {
@@ -320,16 +320,16 @@ pub fn exec_spl(
 pub fn exec_seq(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     use Modifier::{A, AB, B, BA, F, I, X};
 
     let (src_instruction, src_a, src_b) =
-        core.resolve_instruction_a_b(current_address, &instruction.a);
+        core.resolve_instruction_a_b(current_address, instruction.a);
 
     let (dest_instruction, dest_a, dest_b) =
-        core.resolve_instruction_a_b(current_address, &instruction.b);
+        core.resolve_instruction_a_b(current_address, instruction.b);
 
     let should_skip = match instruction.operation.modifier {
         A => src_a == dest_a,
@@ -352,16 +352,16 @@ pub fn exec_seq(
 pub fn exec_sne(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     use Modifier::{A, AB, B, BA, F, I, X};
 
     let (src_instruction, src_a, src_b) =
-        core.resolve_instruction_a_b(current_address, &instruction.a);
+        core.resolve_instruction_a_b(current_address, instruction.a);
 
     let (dest_instruction, dest_a, dest_b) =
-        core.resolve_instruction_a_b(current_address, &instruction.b);
+        core.resolve_instruction_a_b(current_address, instruction.b);
 
     let should_skip = match instruction.operation.modifier {
         A => src_a != dest_a,
@@ -385,14 +385,14 @@ pub fn exec_sne(
 pub fn exec_slt(
     instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     use Modifier::{A, AB, B, BA, F, I, X};
 
-    let (_, src_a, src_b) = core.resolve_instruction_a_b(current_address, &instruction.a);
+    let (_, src_a, src_b) = core.resolve_instruction_a_b(current_address, instruction.a);
 
-    let (_, dest_a, dest_b) = core.resolve_instruction_a_b(current_address, &instruction.b);
+    let (_, dest_a, dest_b) = core.resolve_instruction_a_b(current_address, instruction.b);
 
     let should_skip = match instruction.operation.modifier {
         A => src_a < dest_a,
@@ -409,10 +409,10 @@ pub fn exec_slt(
 
 /// `NOP` - No Operation.
 /// This operation does nothing.
-pub fn exec_nop(
+pub const fn exec_nop(
     _instruction: &Instruction,
     current_address: Address,
-    core: &mut Core,
+    core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     live(current_address, 1, core)
@@ -426,11 +426,11 @@ fn do_arithmetic(
     warrior_id: WarriorId,
     arithmetic: ArithmeticOperation,
 ) -> TaskOutcome {
-    let (_, src_a, src_b) = core.resolve_instruction_a_b(current_address, &instruction.a);
+    let (_, src_a, src_b) = core.resolve_instruction_a_b(current_address, instruction.a);
 
-    let (_, dest_a, dest_b) = core.resolve_instruction_a_b(current_address, &instruction.b);
+    let (_, dest_a, dest_b) = core.resolve_instruction_a_b(current_address, instruction.b);
 
-    let dest_address = core.resolve_operand_address(&instruction.b, current_address);
+    let dest_address = core.resolve_operand_address(instruction.b, current_address);
 
     match instruction.operation.modifier {
         Modifier::A => {
@@ -481,16 +481,16 @@ fn do_arithmetic(
                 return live(current_address, 1, core);
             }
         }
-    };
+    }
 
     die()
 }
 
-fn die() -> TaskOutcome {
+const fn die() -> TaskOutcome {
     TaskOutcome::Died
 }
 
-fn live(current_address: Address, next_address_offset: i32, core: &Core) -> TaskOutcome {
+const fn live(current_address: Address, next_address_offset: i32, core: &Core) -> TaskOutcome {
     let next_address = core.resolve_address(current_address, next_address_offset);
 
     TaskOutcome::Lived {
@@ -498,7 +498,7 @@ fn live(current_address: Address, next_address_offset: i32, core: &Core) -> Task
     }
 }
 
-fn do_jump(target_operand: &Operand, current_address: Address, core: &Core) -> TaskOutcome {
+fn do_jump(target_operand: Operand, current_address: Address, core: &Core) -> TaskOutcome {
     let target_address = core.resolve_operand_address(target_operand, current_address);
 
     TaskOutcome::Lived {

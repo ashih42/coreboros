@@ -6,11 +6,13 @@ pub enum SceneChange {
 }
 
 impl SceneChange {
-    pub fn to_arena(warrior_queue: WarriorQueue) -> Self {
+    #[must_use]
+    pub const fn to_arena(warrior_queue: WarriorQueue) -> Self {
         Self::ToArena { warrior_queue }
     }
 
-    pub fn to_editor(warrior_queue: WarriorQueue) -> Self {
+    #[must_use]
+    pub const fn to_editor(warrior_queue: WarriorQueue) -> Self {
         Self::ToEditor { warrior_queue }
     }
 }

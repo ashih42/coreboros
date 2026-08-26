@@ -53,7 +53,7 @@ impl CoreCell {
         self.b_author = Some(warrior_id).into();
     }
 
-    pub fn clear_author(&mut self) {
+    pub const fn clear_author(&mut self) {
         self.operation_author = CellSlotAuthor::None;
         self.a_author = CellSlotAuthor::None;
         self.b_author = CellSlotAuthor::None;

@@ -1,47 +1,42 @@
 use crate::{
     instruction::{Instruction, addressing_mode::AddressingMode, operand::Operand},
     mars::{
-        address::Address, config::core_initialization_strategy::CoreInitializationStrategy,
-        core_cell::CoreCell, math_executor::MathExecutor,
+        address::Address,
+        config::{Config, core_initialization_strategy::CoreInitializationStrategy},
+        core_cell::CoreCell,
+        math_executor::MathExecutor,
     },
     warrior::warrior_id::WarriorId,
 };
 
 pub struct Core {
-    pub cells: Vec<CoreCell>,
+    cells: Vec<CoreCell>,
+    size: usize,
     initialization_strategy: CoreInitializationStrategy,
-    pub width: usize,
-    pub height: usize,
-    core_size: usize,
     pub math_executor: MathExecutor,
 }
 
 impl Core {
-    pub fn new(
-        width: usize,
-        height: usize,
-        initialization_strategy: CoreInitializationStrategy,
-    ) -> Self {
-        let core_size = width * height;
+    pub fn new(config: &Config) -> Self {
+        let size = config.core_dimension.as_size();
+        let initialization_strategy = config.core_initialization_strategy;
 
         let cells = match initialization_strategy {
             CoreInitializationStrategy::FillDat00 | CoreInitializationStrategy::Leftover => {
-                vec![CoreCell::default(); core_size]
+                vec![CoreCell::default(); size]
             }
             CoreInitializationStrategy::Random => std::iter::repeat_with(|| {
-                CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
+                CoreCell::new(Instruction::random_instruction_wrapped(size), None)
             })
-            .take(core_size)
+            .take(size)
             .collect(),
         };
 
         Self {
             cells,
+            size,
             initialization_strategy,
-            width,
-            height,
-            core_size,
-            math_executor: MathExecutor::new(core_size),
+            math_executor: MathExecutor::new(size),
         }
     }
 
@@ -56,33 +51,28 @@ impl Core {
                 }
             }
             CoreInitializationStrategy::Random => {
-                let core_size = self.size();
-
                 self.cells.fill_with(|| {
-                    CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
+                    CoreCell::new(Instruction::random_instruction_wrapped(self.size), None)
                 });
             }
         }
     }
 
-    /// This function requires `address` to be valid.
+    /// Note: This function requires `address` to be valid.
     #[inline]
+    #[allow(clippy::indexing_slicing, reason = "The `address` is valid.")]
     pub fn get_cell(&self, address: Address) -> &CoreCell {
         &self.cells[address]
     }
 
-    /// This function requires `address` to be valid.
+    /// Note: This function requires `address` to be valid.
     #[inline]
+    #[allow(clippy::indexing_slicing, reason = "The `address` is valid.")]
     pub fn get_cell_mut(&mut self, address: Address) -> &mut CoreCell {
         &mut self.cells[address]
     }
 
-    pub fn get_cell_with_wraparound(&self, address: Address) -> &CoreCell {
-        let position = address % self.size();
-        &self.cells[position]
-    }
-
-    /// This function requires `address` to be valid.
+    /// Given an `instruction`, wrap its operand values, and load this wrapped instruction to the core at `address`.
     pub fn wrap_and_load_instruction(
         &mut self,
         address: Address,
@@ -91,10 +81,10 @@ impl Core {
     ) {
         let wrapped_instruction = self.math_executor.wrap_instruction(instruction);
 
-        self.cells[address] = CoreCell::new(wrapped_instruction, author);
+        *self.get_cell_mut(address) = CoreCell::new(wrapped_instruction, author);
     }
 
-    /// This function requires `address` to be valid.
+    /// Note: This function requires `address` to be valid.
     pub fn increment_a_number(&mut self, address: Address, author: WarriorId) {
         let a_number = self.get_cell(address).instruction.a.number;
         let a_number = self.math_executor.increment(a_number);
@@ -103,7 +93,7 @@ impl Core {
         cell.set_a_number(a_number, author);
     }
 
-    /// This function requires `address` to be valid.
+    /// Note: This function requires `address` to be valid.
     pub fn increment_b_number(&mut self, address: Address, author: WarriorId) {
         let b_number = self.get_cell(address).instruction.b.number;
         let b_number = self.math_executor.increment(b_number);
@@ -112,7 +102,7 @@ impl Core {
         cell.set_b_number(b_number, author);
     }
 
-    /// This function requires `address` to be valid.
+    /// Note: This function requires `address` to be valid.
     pub fn decrement_a_number(&mut self, address: Address, author: WarriorId) {
         let a_number = self.get_cell(address).instruction.a.number;
         let a_number = self.math_executor.decrement(a_number);
@@ -121,7 +111,7 @@ impl Core {
         cell.set_a_number(a_number, author);
     }
 
-    /// This function requires `address` to be valid.
+    /// Note: This function requires `address` to be valid.
     pub fn decrement_b_number(&mut self, address: Address, author: WarriorId) {
         let b_number = self.get_cell(address).instruction.b.number;
         let b_number = self.math_executor.decrement(b_number);
@@ -130,20 +120,22 @@ impl Core {
         cell.set_b_number(b_number, author);
     }
 
-    #[inline]
-    pub const fn size(&self) -> usize {
-        self.core_size
-    }
-
-    pub fn resolve_address(&self, address: Address, offset: i32) -> Address {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::as_conversions,
+        clippy::arithmetic_side_effects,
+        reason = "These operations are valid 👌"
+    )]
+    pub const fn resolve_address(&self, address: Address, offset: i32) -> Address {
         let destination = (address as i32) + offset;
-        destination.rem_euclid(self.size() as i32) as Address
+        destination.rem_euclid(self.size as i32) as Address
     }
 
     /// Determine the address specified in the `operand`.
     /// Pre-decrement and Post-increment operations are handled before/after this function,
     /// so here it is okay to resolve these variations of indirect modes in the same way.
-    pub fn resolve_operand_address(&self, operand: &Operand, current_address: Address) -> Address {
+    pub fn resolve_operand_address(&self, operand: Operand, current_address: Address) -> Address {
         use AddressingMode as AM;
 
         let indirect_address = self.resolve_address(current_address, operand.number);
@@ -164,7 +156,7 @@ impl Core {
     pub fn resolve_instruction_a_b(
         &self,
         current_address: Address,
-        operand: &Operand,
+        operand: Operand,
     ) -> (Instruction, i32, i32) {
         let address = self.resolve_operand_address(operand, current_address);
         let instruction = self.get_cell(address).instruction;
@@ -189,10 +181,12 @@ mod tests {
 
     #[test]
     fn test_resolve_address() {
-        let core = Core::new(10, 10, CoreInitializationStrategy::FillDat00);
+        let config = Config::default(); // Default core size is 10 x 8 = 80
+        let core = Core::new(&config);
 
-        assert_eq!(core.resolve_address(0, 1), 1);
-        assert_eq!(core.resolve_address(0, 1005), 5);
-        assert_eq!(core.resolve_address(0, -1001), 99);
+        assert_eq!(core.resolve_address(0, 0), 0);
+        assert_eq!(core.resolve_address(0, 10), 10);
+        assert_eq!(core.resolve_address(0, 100), 20);
+        assert_eq!(core.resolve_address(0, -1), 79);
     }
 }

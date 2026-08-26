@@ -13,6 +13,7 @@ fn main() {
         process::exit(1);
     }
 
+    #[allow(clippy::indexing_slicing, reason = "This index is valid.")]
     let filepath = &args[0];
 
     match Warrior::from_file(filepath) {

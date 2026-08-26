@@ -1,5 +1,8 @@
 use egui_macroquad::egui;
-use std::sync::{Arc, LazyLock};
+use std::{
+    fmt::Write as _,
+    sync::{Arc, LazyLock},
+};
 
 use crate::scene::editor::syntax_highlighter::SyntaxHighlighter;
 
@@ -38,11 +41,14 @@ impl TextEditor {
 
     /// Create the line numbers column string, with each line containing a number left-padded with space.
     fn generate_line_numbers_col(number_of_lines: usize) -> String {
-        (1..=number_of_lines).map(|i| format!("{i:4}\n")).collect()
+        (1..=number_of_lines).fold(String::new(), |mut output, i| {
+            let _ = writeln!(output, "{i:4}");
+            output
+        })
     }
 
     /// If `input` changed, invalidate the cache and construct a new galley.
-    /// Note: This operation cannot be a method because the TextEditor's `input_text` is also borrowed mutably in another place.
+    /// Note: This operation cannot be a method because the `input_text` is also borrowed mutably in another place.
     pub fn get_cached_or_build_new_galley(
         ui: &egui::Ui,
         input: &str,
@@ -50,7 +56,7 @@ impl TextEditor {
         cached_galley: &mut Option<Arc<egui::Galley>>,
     ) -> Arc<egui::Galley> {
         if input != cached_input_text {
-            *cached_input_text = input.to_owned();
+            input.clone_into(cached_input_text);
             *cached_galley = None;
         }
 

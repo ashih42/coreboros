@@ -29,7 +29,7 @@ pub struct ConfigManager {
 
 impl Default for ConfigManager {
     fn default() -> Self {
-        let selected_core_dimension = CoreDimension::Small;
+        let selected_core_dimension = CoreDimension::Nano;
         let available_core_dimensions = CoreDimension::list_all_values();
 
         let selected_core_initialization_strategy = CoreInitializationStrategy::FillDat00;
@@ -39,7 +39,7 @@ impl Default for ConfigManager {
         let selected_task_queue_capacity = 64;
         let available_task_queue_capacities = Box::new([1, 4, 16, 64, 128, 256]);
 
-        let selected_turn_limit = 2_000;
+        let selected_turn_limit = 400;
         let available_turn_limits = Box::new([
             40, 80, 200, 400, 800, 2_000, 4_000, 8_000, 20_000, 40_000, 80_000,
         ]);
@@ -68,7 +68,7 @@ impl Default for ConfigManager {
 }
 
 impl ConfigManager {
-    pub fn get_config(&self) -> Config {
+    pub const fn get_config(&self) -> Config {
         Config {
             core_dimension: self.selected_core_dimension,
             core_initialization_strategy: self.selected_core_initialization_strategy,
@@ -79,6 +79,10 @@ impl ConfigManager {
         }
     }
 
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "These numbers are small because user input is limited."
+    )]
     pub fn validate_entry(&self, warrior_queue: &WarriorQueue) -> Result<(), String> {
         let total_instructions = warrior_queue
             .iter()

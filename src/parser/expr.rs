@@ -32,6 +32,10 @@ pub enum BinaryOperator {
 impl Expr {
     /// Convert `expr_pairs` created from `RedcodeParser::parse(Rule::expr, input)`
     /// into a `Expr` tree with a nested hierarchy that encodes standard arithmetic operator precedence.
+    #[allow(
+        clippy::unreachable,
+        reason = "The grammar guarantees only these rules may occur here."
+    )]
     pub fn parse_expr(expr_pairs: Pairs<Rule>) -> Self {
         EXPR_PARSER
             .map_primary(|primary| match primary.as_rule() {
@@ -75,27 +79,39 @@ impl Expr {
 
             Self::Label(label) => Self::find_offset(label, label_dictionary, current_line),
 
-            Self::UnaryMinus(expr) => Ok(-expr.eval(label_dictionary, current_line)?),
+            Self::UnaryMinus(expr) => {
+                let value = expr.eval(label_dictionary, current_line)?;
+
+                Ok((-1_i32).wrapping_mul(value))
+            }
 
             Self::BinaryOperation { lhs, operator, rhs } => {
                 let lhs = lhs.eval(label_dictionary, current_line)?;
                 let rhs = rhs.eval(label_dictionary, current_line)?;
 
                 match operator {
-                    BinaryOperator::Add => Ok(lhs + rhs),
-                    BinaryOperator::Subtract => Ok(lhs - rhs),
-                    BinaryOperator::Multiply => Ok(lhs * rhs),
+                    BinaryOperator::Add => Ok(lhs.wrapping_add(rhs)),
+                    BinaryOperator::Subtract => Ok(lhs.wrapping_sub(rhs)),
+                    BinaryOperator::Multiply => Ok(lhs.wrapping_mul(rhs)),
                     BinaryOperator::Divide => {
                         if rhs == 0 {
                             bail!("Division by zero");
                         }
-                        Ok(lhs / rhs)
+                        #[allow(
+                            clippy::arithmetic_side_effects,
+                            reason = "This is safe because I checked for division by zero."
+                        )]
+                        Ok(lhs.wrapping_div(rhs))
                     }
                     BinaryOperator::Modulo => {
                         if rhs == 0 {
                             bail!("Modulo by zero");
                         }
-                        Ok(lhs % rhs)
+                        #[allow(
+                            clippy::arithmetic_side_effects,
+                            reason = "This is safe because I checked for modulo by zero."
+                        )]
+                        Ok(lhs.wrapping_rem(rhs))
                     }
                 }
             }
