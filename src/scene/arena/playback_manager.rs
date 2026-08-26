@@ -1,11 +1,12 @@
-use std::time::Instant;
+use macroquad::prelude::info;
+use macroquad::time;
 
 use crate::scene::arena::{playback_speed::PlaybackSpeed, timer::Timer};
 
 pub struct PlaybackManager {
     pub speed: PlaybackSpeed,
     timer: Timer,
-    game_start: Instant, // Temporary timestamp to check how long a game runs at Turbo speed until it is stopped after final turn.
+    game_started_at: f64, // Temporary timestamp to check how long a game runs at Turbo speed until it ends after final turn.
 }
 
 impl Default for PlaybackManager {
@@ -16,7 +17,7 @@ impl Default for PlaybackManager {
         Self {
             speed,
             timer,
-            game_start: Instant::now(),
+            game_started_at: 0.0,
         }
     }
 }
@@ -44,11 +45,12 @@ impl PlaybackManager {
 
     #[inline]
     pub fn stop(&mut self) {
-        println!(
-            "Game stopped after {} seconds",
-            self.game_start.elapsed().as_secs_f32()
-        );
         self.timer.stop();
+
+        let game_ended_at = time::get_time();
+        let elapsed_seconds = game_ended_at - self.game_started_at;
+
+        info!("Game ended after {:.2} seconds.", elapsed_seconds);
     }
 
     #[inline]
@@ -69,7 +71,7 @@ impl PlaybackManager {
     }
 
     pub fn play_turbo(&mut self) {
-        self.game_start = Instant::now();
+        self.game_started_at = time::get_time();
         self.set_speed(PlaybackSpeed::Turbo);
         self.play();
     }
