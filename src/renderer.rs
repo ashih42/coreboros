@@ -5,6 +5,9 @@ use crate::renderer::{number_str_cache::NumberStrCache, texture_manager::Texture
 mod number_str_cache;
 mod texture_manager;
 
+/// `Renderer` has 2 responsibilities related to rendering:
+/// - providing texture resources.
+/// - providing string representations of numbers.
 pub struct Renderer {
     pub texture_manager: TextureManager,
     number_str_cache: NumberStrCache,
@@ -28,6 +31,9 @@ impl Default for Renderer {
 }
 
 impl Renderer {
+    /// Get string representation of usize `num`.
+    /// Note: The usize expected input value will not reach so high that
+    /// it cannot be converted to i32.
     #[inline]
     #[allow(
         clippy::cast_possible_truncation,
@@ -39,15 +45,8 @@ impl Renderer {
         self.number_str_cache.i32_to_str(num as i32)
     }
 
-    #[inline]
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "This expression is safe because `num` is small."
-    )]
-    pub fn usize_plus_1_to_str(&self, num: usize) -> &str {
-        self.usize_to_str(num + 1)
-    }
-
+    /// Get string representation of i32 `num`.
+    /// Note: The i32 expected input values should be a narrow range within [`-core_size/2`, `core_size/2 - 1`].
     #[inline]
     pub fn i32_to_str(&self, num: i32) -> &str {
         self.number_str_cache.i32_to_str(num)

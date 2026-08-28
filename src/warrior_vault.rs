@@ -1,5 +1,7 @@
 use crate::warrior::Warrior;
 
+/// `WarriorVault` is a collection of `Warrior` stored instances that may be edited and loaded for gameplay.
+/// Note: `warrior.metadata.name` is used as a primary key to in `WarriorVault`.
 pub struct WarriorVault {
     warriors: Vec<Warrior>,
 }
@@ -44,6 +46,7 @@ impl WarriorVault {
         self.warriors.remove(index);
     }
 
+    /// Save the given `warrior`, using `warrior.metadata.name` as a primary key in the `WarriorVault`.
     pub fn save_warrior(&mut self, warrior: &Warrior) {
         let name = &warrior.metadata.name;
 

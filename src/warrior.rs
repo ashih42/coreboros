@@ -10,6 +10,10 @@ pub mod warrior_metadata;
 
 mod examples;
 
+/// `Warrior` represents a valid compiled redcode program, ready for gameplay.
+///
+/// Note: The compiled `instructions` contain A and B numbers in a raw format, unaffected by core size.
+/// `Mars` will wrap these numbers when they are loaded into the core.
 #[derive(Clone)]
 pub struct Warrior {
     pub redcode: String,
@@ -50,6 +54,8 @@ impl Warrior {
         WarriorBuilder::from_file(path)
     }
 
+    /// Convert the warrior to Load File format.
+    /// Reference: <https://corewar.co.uk/standards/icws94.htm#3.0>
     #[must_use]
     pub fn as_load_file(&self) -> String {
         indoc::formatdoc! {"

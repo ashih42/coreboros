@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::mars::address::Address;
 
-/// `TaskQueue` implements a FIFO queue container for "tasks", which are simply addresses on the core.
+/// `TaskQueue` is a FIFO queue for "tasks", which are simply addresses in the core.
 #[derive(Debug, Clone)]
 pub struct TaskQueue {
     tasks: VecDeque<Address>,

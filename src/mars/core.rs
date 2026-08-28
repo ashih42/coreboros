@@ -9,6 +9,7 @@ use crate::{
     warrior::warrior_id::WarriorId,
 };
 
+/// `Core` is the circular shared memory space occupied by all warriors' instructions.
 pub struct Core {
     cells: Vec<CoreCell>,
     size: usize,

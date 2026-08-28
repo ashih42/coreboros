@@ -1,5 +1,6 @@
 use crate::{mars::task_queue::TaskQueue, warrior::Warrior};
 
+/// `WarriorContext` represents a `Warrior` that is loaded in `Mars`.
 pub struct WarriorContext {
     pub warrior: Warrior,
     pub task_queue: TaskQueue,

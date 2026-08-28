@@ -1,3 +1,5 @@
+/// `CoreInitializationStrategy` indicates how to fill the addresses in the core that are
+/// not initialized with a warrior's instructions.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CoreInitializationStrategy {
     FillDat00,

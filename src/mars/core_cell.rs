@@ -3,6 +3,7 @@ use crate::{
     warrior::warrior_id::WarriorId,
 };
 
+/// `CoreCell` represents a concrete value written in the core at a specific address.
 #[derive(Clone)]
 pub struct CoreCell {
     pub instruction: Instruction,

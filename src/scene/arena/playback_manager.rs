@@ -3,10 +3,11 @@ use macroquad::time;
 
 use crate::scene::arena::{playback_speed::PlaybackSpeed, timer::Timer};
 
+/// `PlaybackManager` is responsible for automatically advancing the game state based on its current `speed`.
 pub struct PlaybackManager {
-    pub speed: PlaybackSpeed,
+    speed: PlaybackSpeed,
     timer: Timer,
-    game_started_at: f64, // Temporary timestamp to check how long a game runs at Turbo speed until it ends after final turn.
+    game_started_at: Option<f64>, // Temporary timestamp to check how long a game runs at Turbo speed until it ends after final turn.
 }
 
 impl Default for PlaybackManager {
@@ -17,7 +18,7 @@ impl Default for PlaybackManager {
         Self {
             speed,
             timer,
-            game_started_at: 0.0,
+            game_started_at: None,
         }
     }
 }
@@ -47,10 +48,12 @@ impl PlaybackManager {
     pub fn stop(&mut self) {
         self.timer.stop();
 
-        let game_ended_at = time::get_time();
-        let elapsed_seconds = game_ended_at - self.game_started_at;
+        if let Some(started_at) = self.game_started_at {
+            let elapsed_seconds = time::get_time() - started_at;
+            info!("Game ended after {:.2} seconds.", elapsed_seconds);
+        }
 
-        info!("Game ended after {:.2} seconds.", elapsed_seconds);
+        self.game_started_at = None;
     }
 
     #[inline]
@@ -71,7 +74,7 @@ impl PlaybackManager {
     }
 
     pub fn play_turbo(&mut self) {
-        self.game_started_at = time::get_time();
+        self.game_started_at = Some(time::get_time());
         self.set_speed(PlaybackSpeed::Turbo);
         self.play();
     }

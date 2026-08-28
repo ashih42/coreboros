@@ -1,3 +1,4 @@
+/// `WarriorMetadata` holds additional information about the `Warrior`.
 #[derive(Debug, Clone)]
 pub struct WarriorMetadata {
     pub name: String,

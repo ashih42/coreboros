@@ -7,7 +7,7 @@ use macroquad::prelude::*;
 
 use crate::{
     color,
-    game::GameContext,
+    game_context::GameContext,
     instruction::{opcode::Opcode, operand::Operand, operation::Operation},
     mars::{Mars, address::Address, config::Config},
     renderer::Renderer,
@@ -23,6 +23,8 @@ use crate::{
 const LEFT_SIDEBAR_WIDTH: f32 = 220.0;
 const RIGHT_SIDEBAR_WIDTH: f32 = 360.0;
 
+/// `Arena` is the gameplay scene where the user can watch warriors execute instructions and
+/// observe their effects on the core.
 pub struct Arena {
     mars: Mars,
     selected_address: Address,
@@ -56,6 +58,7 @@ impl Arena {
         }
     }
 
+    /// Listen for events from `playback_manager`.
     fn process_playback_events(&mut self) {
         if self.playback_manager.poll() {
             if self.mars.game_over {
@@ -66,19 +69,23 @@ impl Arena {
         }
     }
 
+    /// Execute a single instruction.
     fn step(&mut self) {
         self.mars.step();
     }
 
+    /// Tell `playback_manager` auto-play at its current speed.
     fn play(&mut self) {
         self.playback_manager.play();
         self.step();
     }
 
+    /// Stop auto-play.
     fn stop(&mut self) {
         self.playback_manager.stop();
     }
 
+    /// Start or stop auto-play.
     fn toggle_play_pause(&mut self) {
         if self.playback_manager.is_playing() {
             self.stop();
@@ -87,6 +94,7 @@ impl Arena {
         }
     }
 
+    /// Go to the next auto-play speed, and start auto-play.
     fn toggle_speed(&mut self) {
         let next_speed = self.playback_manager.get_next_speed();
         self.playback_manager.set_speed(next_speed);
@@ -96,6 +104,7 @@ impl Arena {
         }
     }
 
+    /// Start a new game.
     fn start_new_game(&mut self) {
         self.stop();
 
@@ -103,6 +112,7 @@ impl Arena {
         self.mars.reset(loading_next_game);
     }
 
+    /// Prepare a `SceneChange` message to go to `Editor` scene with the warriors in game.
     fn go_to_editor_scene(&mut self) {
         let warrior_queue = self
             .mars
@@ -157,40 +167,49 @@ impl Arena {
         }
     }
 
-    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    /// Move the selected address one step left on the grid view of the core.
     const fn move_selected_address_left(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
 
+        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
         let new_address = (self.selected_address + core_size - 1) % core_size;
+
         self.set_selected_address(new_address);
     }
 
-    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    /// Move the selected address one step right on the grid view of the core.
     const fn move_selected_address_right(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
 
+        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
         let new_address = (self.selected_address + 1) % core_size;
+
         self.set_selected_address(new_address);
     }
 
-    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    /// Move the selected address one step up on the grid view of the core.
     const fn move_selected_address_up(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
         let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
+        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
         let new_address = (self.selected_address + core_size - width) % core_size;
+
         self.set_selected_address(new_address);
     }
 
-    #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+    /// Move the selected address one step down on the grid view of the core.
     const fn move_selected_address_down(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
         let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
+        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
         let new_address = (self.selected_address + width) % core_size;
+
         self.set_selected_address(new_address);
     }
 
+    /// Select the address where the current warrior's current task is located.
     fn zoom_to_current_warrior_task(&mut self) {
         if let Some(address) = self
             .mars
@@ -198,7 +217,7 @@ impl Arena {
             .get(self.mars.current_warrior_id)
             .and_then(|context| context.task_queue.peek())
         {
-            self.selected_address = address;
+            self.set_selected_address(address);
         }
     }
 
@@ -210,6 +229,7 @@ impl Arena {
     }
 
     /// Process mouse events.
+    /// Select the address where LMB clicked in the grid view of the core.
     #[allow(
         clippy::cast_precision_loss,
         clippy::cast_possible_truncation,
@@ -236,19 +256,10 @@ impl Arena {
                 // Convert mouse position to world space.
                 let world_pos = camera.screen_to_world(vec2(mouse_x, mouse_y));
 
-                // println!(
-                //     "mouse_x={}, mouse_y={}, world_pos={}",
-                //     mouse_x, mouse_y, world_pos
-                // );
-
                 let x = (world_pos.x / cell_width) as usize;
                 let y = (world_pos.y / cell_height) as usize;
 
                 let new_address = self.get_address(x, y);
-
-                // println!(
-                //     "world_pos: {world_pos}; \t cell x = {x}, y = {y}, \t new_address = {new_address}"
-                // );
                 self.set_selected_address(new_address);
             }
         }
@@ -263,7 +274,7 @@ impl Arena {
     }
 
     /// Configure the camera for the game area.
-    /// This must be done on every frame because window size may change at any time.
+    /// Note: This must be done on every frame because window size may change at any time.
     #[allow(
         clippy::cast_possible_truncation,
         clippy::as_conversions,
@@ -379,6 +390,8 @@ impl Arena {
         }
     }
 
+    /// Given `address`, return the center position of the rectangle corresponding to its location
+    /// in the grid view of the core.
     #[allow(
         clippy::cast_precision_loss,
         clippy::as_conversions,
@@ -421,13 +434,14 @@ impl Arena {
     /// The left side bar includes:
     /// - General context of the current game.
     /// - Details of all warriors.
+    #[allow(clippy::arithmetic_side_effects, reason = "The number is small.")]
     fn draw_left_sidebar(&self, egui_ctx: &egui::Context, renderer: &Renderer) {
         const SUBHEADING_FONT_SIZE: f32 = 20.0;
 
         // Keep Mars logic in 0-based counting, but display these numbers in 1-based counting.
-        let game_str = renderer.usize_plus_1_to_str(self.mars.game_counter);
-        let turn_str = renderer.usize_plus_1_to_str(self.mars.turn_counter);
-        let cycle_str = renderer.usize_plus_1_to_str(self.mars.cycle_counter);
+        let game_str = renderer.usize_to_str(self.mars.game_counter + 1);
+        let turn_str = renderer.usize_to_str(self.mars.turn_counter + 1);
+        let cycle_str = renderer.usize_to_str(self.mars.cycle_counter + 1);
 
         let turn_limit_str = renderer.usize_to_str(self.mars.config.turn_limit);
 
@@ -621,7 +635,6 @@ impl Arena {
                 // Draw current playback speed.
                 ui.horizontal(|ui| {
                     if self.playback_manager.is_playing() {
-                        // ui.label(egui::RichText::new("Speed").size(30.0));
                         let speed = self.playback_manager.get_speed();
                         ui.label("Speed:");
                         ui.label(speed.as_ref());
@@ -911,11 +924,13 @@ impl Arena {
 
     /// Convert `(x, y)` to an address value to index into the `Core`.
     #[inline]
-    #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
     const fn get_address(&self, x: usize, y: usize) -> usize {
         let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
-        y * width + x
+        #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
+        {
+            y * width + x
+        }
     }
 
     #[inline]
@@ -932,11 +947,11 @@ impl Arena {
 ///
 /// Example: In a 4 player game, if it is currently player 2's turn, then the rendering order is [3, 0, 1, 2].
 #[inline]
-#[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
 fn generate_warrior_rendering_order(
     num_warriors: usize,
     current_warrior_id: WarriorId,
 ) -> impl DoubleEndedIterator<Item = WarriorId> {
+    #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
     (0..num_warriors).map(move |i| (i + current_warrior_id + 1) % num_warriors)
 }
 

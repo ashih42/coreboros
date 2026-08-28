@@ -1,6 +1,8 @@
 use strum::AsRefStr;
 
 #[derive(Debug, Default, Clone, Copy, AsRefStr)]
+
+/// `PlaybackSpeed` is a preset of possible speed values, used by `PlaybackManager`.
 pub enum PlaybackSpeed {
     #[default]
     #[strum(serialize = "Normal")]

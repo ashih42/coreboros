@@ -4,7 +4,7 @@ use macroquad::prelude::*;
 use crate::{
     color,
     config_manager::ConfigManager,
-    game::GameContext,
+    game_context::GameContext,
     mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     renderer::Renderer,
     scene::{Scene, editor::text_editor::TextEditor, scene_change::SceneChange},
@@ -17,29 +17,22 @@ mod syntax_highlighter;
 mod syntax_kind;
 mod text_editor;
 
+/// `Editor` is a UI-only scene where the user can load, edit, and save warriors,
+/// and change config values before entering the arena.
+#[derive(Default)]
 pub struct Editor {
     #[allow(clippy::struct_field_names, reason = "This is a good name 👌")]
     text_editor: TextEditor,
     console_text: String,
-
     current_warrior: Option<Warrior>,
     warrior_queue: WarriorQueue,
-
     next_scene: Option<SceneChange>,
 }
 
 impl Scene for Editor {
     fn update(&mut self, game_ctx: &mut GameContext) -> Option<SceneChange> {
-        egui_macroquad::ui(|egui_ctx| {
-            self.draw_left_sidebar(egui_ctx, game_ctx);
-            self.draw_right_sidebar(egui_ctx, game_ctx);
-            self.draw_bottom_console(egui_ctx);
-            self.draw_central_buttons(egui_ctx, &mut game_ctx.warrior_vault);
-            self.draw_central_redcode_editor(egui_ctx);
-        });
-        egui_macroquad::draw();
-
         self.process_keyboard_events();
+        self.render(game_ctx);
 
         self.next_scene.take()
     }
@@ -54,10 +47,8 @@ impl Editor {
         Self {
             text_editor: TextEditor::default(),
             console_text: String::new(),
-
             current_warrior: None,
             warrior_queue,
-
             next_scene: None,
         }
     }
@@ -69,6 +60,19 @@ impl Editor {
         }
     }
 
+    /// Render only UI elements.
+    fn render(&mut self, game_ctx: &mut GameContext) {
+        egui_macroquad::ui(|egui_ctx| {
+            self.draw_left_sidebar(egui_ctx, game_ctx);
+            self.draw_right_sidebar(egui_ctx, game_ctx);
+            self.draw_bottom_console(egui_ctx);
+            self.draw_central_buttons(egui_ctx, &mut game_ctx.warrior_vault);
+            self.draw_central_redcode_editor(egui_ctx);
+        });
+        egui_macroquad::draw();
+    }
+
+    /// Draw the bottom console, which shows a text area for error messages.
     fn draw_bottom_console(&mut self, egui_ctx: &egui::Context) {
         let bottom_panel_height = screen_height() * 0.30;
 
@@ -84,17 +88,16 @@ impl Editor {
                     .max_height(f32::INFINITY)
                     .stick_to_bottom(true)
                     .show(ui, |ui| {
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.console_text)
-                                .min_size(ui.available_size())
-                                .desired_width(f32::INFINITY)
-                                .hint_text("Tip: Compile your warrior, and then load it to arena or save it to vault.")
-                                .interactive(false),
-                        );
+                        egui::TextEdit::multiline(&mut self.console_text)
+                            .min_size(ui.available_size())
+                            .desired_width(f32::INFINITY)
+                            .hint_text("Try \"dwarf\" and \"imp\" first.")
+                            .interactive(false)
                     });
             });
     }
 
+    /// Draw a row of 3 buttons to operate on the current warrior.
     fn draw_central_buttons(&mut self, egui_ctx: &egui::Context, warrior_vault: &mut WarriorVault) {
         let button_height = 24.0;
 
@@ -147,6 +150,7 @@ impl Editor {
             });
     }
 
+    /// Draw the Redcode text editor for user to edit the current warrior.
     fn draw_central_redcode_editor(&mut self, egui_ctx: &egui::Context) {
         egui::CentralPanel::default().show(egui_ctx, |ui| {
             ui.heading("Redcode Editor");
@@ -166,6 +170,7 @@ impl Editor {
         });
     }
 
+    /// Draw the line numbers column part of the Redcode text editor.
     fn draw_line_numbers_col(&self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
             ui.add_space(2.5);
@@ -175,6 +180,7 @@ impl Editor {
         });
     }
 
+    /// Draw the input text area part of the Redcode text editor.
     fn draw_text_editor(&mut self, ui: &mut egui::Ui) {
         const INPUT_CHAR_LIMIT: usize = 100_000;
 
@@ -205,6 +211,7 @@ impl Editor {
         }
     }
 
+    /// Copy the current warrior to `warrior_queue`.
     fn copy_current_warrior_to_queue(&mut self) {
         if let Some(warrior) = &self.current_warrior {
             self.warrior_queue.push_if_not_full(warrior.clone());
@@ -212,6 +219,7 @@ impl Editor {
         }
     }
 
+    /// Save the current warrior to `warrior_vault`.
     fn save_current_warrior_to_vault(&mut self, warrior_vault: &mut WarriorVault) {
         if let Some(warrior) = &self.current_warrior {
             warrior_vault.save_warrior(warrior);
@@ -219,11 +227,14 @@ impl Editor {
         }
     }
 
+    /// Prepare a `SceneChange` message to go to `Arena` scene with the warriors in `warrior_queue`.
+    /// Note: You must validate these warriors can enter the core under current config, before calling this method.
     fn enter_arena(&mut self) {
         let warriors = std::mem::take(&mut self.warrior_queue);
         self.next_scene = Some(SceneChange::to_arena(warriors));
     }
 
+    /// Compile the current warrior, showing a success or error message in the console area.
     fn compile(&mut self) {
         match Warrior::from_text(&self.text_editor.input_text) {
             Ok(warrior) => {
@@ -256,6 +267,7 @@ impl Editor {
         });
     }
 
+    /// Draw the left sidebar, which shows the warriors in `warrior_queue`, and a button to take them to `Arena` scene.
     fn draw_left_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &GameContext) {
         egui::SidePanel::left("left_navigation")
             .exact_width(LEFT_SIDEBAR_WIDTH)
@@ -437,6 +449,7 @@ impl Editor {
         frame.response.rect
     }
 
+    /// Draw the right sidebar, which has 2 selector tabs to show either the `warrior_vault` or `config` page.
     fn draw_right_sidebar(&mut self, egui_ctx: &egui::Context, game_ctx: &mut GameContext) {
         #[derive(Clone, Copy, PartialEq, Eq)]
         enum RightSidebarTab {
@@ -500,6 +513,7 @@ impl Editor {
             });
     }
 
+    /// Set `warrior` as the current warrior, and update widgets to display his code.
     fn load_current_warrior(&mut self, warrior: Warrior) {
         self.text_editor.input_text.clone_from(&warrior.redcode);
         self.text_editor.update_line_numbers_col_if_changed();
@@ -507,6 +521,7 @@ impl Editor {
         self.console_text.clear();
     }
 
+    /// Draw a page showing the warriors in `warrior_vault`.
     fn draw_warrior_vault_page(
         &mut self,
         ui: &mut egui::Ui,
@@ -538,6 +553,7 @@ impl Editor {
         });
     }
 
+    /// Draw a warrior in `warrior_vault`, showing his details, and with buttons to load or remove this warrior.
     fn draw_warrior_vault_row(
         &mut self,
         index: usize,
@@ -569,6 +585,7 @@ impl Editor {
         }
     }
 
+    /// Draw the config page, showing several dropdown selectors for the features in `config_manager`.
     fn draw_config_page(
         ui: &mut egui::Ui,
         renderer: &Renderer,

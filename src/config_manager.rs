@@ -7,6 +7,8 @@ use crate::{
     warrior_queue::WarriorQueue,
 };
 
+/// `ConfigManager` contains the list of available values and the currently selected value for each feature,
+/// used in dropdown selector widgets.
 pub struct ConfigManager {
     pub selected_core_dimension: CoreDimension,
     pub available_core_dimensions: Box<[CoreDimension]>,
@@ -68,6 +70,7 @@ impl Default for ConfigManager {
 }
 
 impl ConfigManager {
+    /// Return a `Config` with the currently selected values.
     pub const fn get_config(&self) -> Config {
         Config {
             core_dimension: self.selected_core_dimension,
@@ -79,6 +82,9 @@ impl ConfigManager {
         }
     }
 
+    /// Check if the core has enough space to fit all warriors in `warrior_queue`,
+    /// while considering constraints in the currently selected config values
+    /// `selected_core_dimension`, `selected_warrior_separation_strategy`, and `selected_min_distance_between_warriors`.
     #[allow(
         clippy::arithmetic_side_effects,
         reason = "These numbers are small because user input is limited."

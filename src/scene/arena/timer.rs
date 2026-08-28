@@ -1,3 +1,5 @@
+/// `Timer` keeps track of how much time has passed for the purpose of
+/// repeatedly emitting an event after `period_in_seconds` has passed.
 #[derive(Default)]
 pub struct Timer {
     start_time: f64,

@@ -6,6 +6,7 @@ use std::{
 
 use crate::scene::editor::syntax_highlighter::SyntaxHighlighter;
 
+/// `TextEditor` holds the data necessary for a minimalistic code input widget, used with `egui::TextEdit` widget.
 pub struct TextEditor {
     pub input_text: String,
     pub cached_input_text: String,

@@ -1,9 +1,12 @@
 use crate::warrior::Warrior;
 
+/// `WarriorQueue` is an ordered collection of `Warrior` instances ready for gameplay.
 pub struct WarriorQueue {
     warriors: Vec<Warrior>,
 }
 
+/// Currently, `WarriorQueue` allows at most 8 `Warriors` because there is only a small number
+/// of easily distinguishable colors available for rendering.
 pub const MAX_CAPACITY: usize = 8;
 
 impl Default for WarriorQueue {
@@ -14,11 +17,11 @@ impl Default for WarriorQueue {
     }
 }
 
-/// Convert from an iterator of `&Warrior` to `WarriorQueue`.
 impl<'a, I> From<I> for WarriorQueue
 where
     I: Iterator<Item = &'a Warrior>,
 {
+    /// Convert from an iterator of `&Warrior` to `WarriorQueue`.
     fn from(iter: I) -> Self {
         let mut warriors = Vec::with_capacity(MAX_CAPACITY);
         warriors.extend(iter.take(MAX_CAPACITY).cloned());
@@ -27,8 +30,8 @@ where
     }
 }
 
-/// Convert from `WarriorQueue` to `Vec<Warrior>`.
 impl From<WarriorQueue> for Vec<Warrior> {
+    /// Convert from `WarriorQueue` to `Vec<Warrior>`.
     fn from(warrior_queue: WarriorQueue) -> Self {
         warrior_queue.warriors
     }
@@ -69,6 +72,8 @@ impl WarriorQueue {
         }
     }
 
+    /// Move the entity at `index` up one position,
+    /// effectively swapping the entities at `index` and `index - 1`.
     /// Note: `index` must be valid.
     #[allow(
         clippy::arithmetic_side_effects,
@@ -80,6 +85,8 @@ impl WarriorQueue {
         }
     }
 
+    /// Move the entity at `index` down one position,
+    /// effectively swapping the entities at `index` and `index + 1`.
     /// Note: `index` must be valid.
     #[allow(
         clippy::arithmetic_side_effects,

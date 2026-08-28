@@ -44,6 +44,8 @@ impl Instruction {
         }
     }
 
+    /// Convert this single instruction to Load File format.
+    /// Reference: <https://corewar.co.uk/standards/icws94.htm#3.0>
     #[must_use]
     pub fn as_load_file(&self) -> String {
         const OPERATION_WIDTH: usize = 11;
@@ -60,6 +62,7 @@ impl Instruction {
         )
     }
 
+    /// Create a random `instruction` with its A and B numbers wrapped by `core_size`.
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,

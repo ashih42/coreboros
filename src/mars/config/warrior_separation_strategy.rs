@@ -1,3 +1,5 @@
+/// `WarriorSeparationStrategy` indicates how to determine the starting locations in the core
+/// for each warrior's instructions.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum WarriorSeparationStrategy {
     Equal,

@@ -1,5 +1,7 @@
 use crate::warrior::warrior_id::WarriorId;
 
+/// `CellSlotAuthor` indicates which warrior last wrote to this part of a `CoreCell`.
+///
 /// `CellSlotAuthor` is a space-efficient way to store the same information as `Option<WarriorId>`.
 /// Whereas `Option<WarriorId>` uses 16 bytes, `CellSlotAuthor` only uses 1 byte.
 #[derive(Clone, Copy, Eq, PartialEq)]

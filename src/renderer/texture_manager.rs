@@ -23,20 +23,20 @@ pub struct TextureManager {
 macro_rules! init_tex {
     ($self:ident, $egui_ctx:ident, $name:ident) => {
         $self.$name.get_or_insert_with(|| {
-            // Load image to bytes at compile time.
+            // Load image to bytes.
             let bytes = include_bytes!(concat!("../../assets/images/", stringify!($name), ".png"));
 
             // Convert bytes to macroquad image.
             let mq_image = Image::from_file_with_format(bytes, Some(ImageFormat::Png)).unwrap();
 
-            // Convert macroquad image to egui image.
+            // Convert macroquad image to egui's color image.
             #[allow(clippy::as_conversions, reason = "These conversions are safe 👌")]
             let color_image = egui::ColorImage::from_rgba_unmultiplied(
                 [mq_image.width as usize, mq_image.height as usize],
                 &mq_image.bytes,
             );
 
-            // Register this egui image with the UI context.
+            // Register this color image with the UI context.
             $egui_ctx.load_texture(stringify!($name), color_image, Default::default())
         });
     };
@@ -58,6 +58,9 @@ impl TextureManager {
         init_tex!(self, egui_ctx, digit_8);
     }
 
+    /// Return the texture corresponding to `warrior_id`.
+    /// Note: Because `warrior_id` is 0-based, and display is 1-based, it is necessary to
+    /// return `digit_1` for warrior 0, and so on.
     pub const fn get_warrior_icon(&self, warrior_id: WarriorId) -> Option<&egui::TextureHandle> {
         match warrior_id {
             0 => self.digit_1.as_ref(),

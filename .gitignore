@@ -9,5 +9,7 @@ tmp
 
 .DS_Store
 *.rs_ignore
+src_ignore
+tree.txt
 out.txt
 game.wasm

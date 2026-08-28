@@ -7,6 +7,7 @@ pub mod core_dimension;
 pub mod core_initialization_strategy;
 pub mod warrior_separation_strategy;
 
+/// `Config` contains user-selected values that may affect various operations in `Mars`.
 pub struct Config {
     pub core_dimension: CoreDimension,
     pub core_initialization_strategy: CoreInitializationStrategy,

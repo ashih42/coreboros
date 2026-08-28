@@ -1,10 +1,13 @@
+//! `rng` module implements random-number generator operations using `macroquad::rand`,
+//! so it works even in wasm.
+
 /// Initialize the random number generator's seed with current timestamp.
 pub fn init_rng() {
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
         clippy::as_conversions,
-        reason = "The seed value doesn't matter."
+        reason = "The actual value doesn't matter."
     )]
     macroquad::rand::srand(macroquad::miniquad::date::now() as u64);
 }

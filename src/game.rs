@@ -1,17 +1,9 @@
 use crate::{
-    config_manager::ConfigManager,
-    renderer::Renderer,
+    game_context::GameContext,
     scene::{Scene, arena::Arena, editor::Editor, scene_change::SceneChange},
-    warrior_queue::WarriorQueue,
-    warrior_vault::WarriorVault,
 };
 
-pub struct GameContext {
-    pub config_manager: ConfigManager,
-    pub renderer: Renderer,
-    pub warrior_vault: WarriorVault,
-}
-
+/// `Game` holds a current `scene` and persistent data in `context`.
 pub struct Game {
     scene: Box<dyn Scene>,
     context: GameContext,
@@ -19,20 +11,15 @@ pub struct Game {
 
 impl Default for Game {
     fn default() -> Self {
-        let scene = Editor::new(WarriorQueue::default());
-
         Self {
-            scene: Box::new(scene),
-            context: GameContext {
-                config_manager: ConfigManager::default(),
-                renderer: Renderer::default(),
-                warrior_vault: WarriorVault::default(),
-            },
+            scene: Box::new(Editor::default()),
+            context: GameContext::default(),
         }
     }
 }
 
 impl Game {
+    /// Run the game's main loop, calling `scene.update` and listening for `SceneChange` message.
     #[allow(
         clippy::future_not_send,
         reason = "This game will run as a single-threaded WASM app."
@@ -41,13 +28,13 @@ impl Game {
         loop {
             match self.scene.update(&mut self.context) {
                 Some(SceneChange::ToArena { warrior_queue }) => {
-                    let config = self.context.config_manager.get_config();
-                    let arena = Arena::new(warrior_queue, config);
-                    self.scene = Box::new(arena);
+                    self.scene = Box::new(Arena::new(
+                        warrior_queue,
+                        self.context.config_manager.get_config(),
+                    ));
                 }
                 Some(SceneChange::ToEditor { warrior_queue }) => {
-                    let editor = Editor::new(warrior_queue);
-                    self.scene = Box::new(editor);
+                    self.scene = Box::new(Editor::new(warrior_queue));
                 }
                 None => (),
             }

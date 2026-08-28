@@ -1,3 +1,4 @@
+/// `CoreDimension` indicates how big the core is.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum CoreDimension {
     Pico,

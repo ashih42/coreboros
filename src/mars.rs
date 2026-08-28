@@ -24,6 +24,7 @@ mod task_outcome;
 mod task_queue;
 mod warrior_context;
 
+/// `Mars` ("Memory Array Redcode Simulator") is the virtual machine that executes Redcode instructions.
 pub struct Mars {
     pub config: Config,
     pub core: Core,
@@ -37,7 +38,7 @@ pub struct Mars {
 }
 
 impl Mars {
-    /// Note: `ConfigManager` has validated these `warriors` can fit on the core with the given `config`.
+    /// Precondition: `ConfigManager` has already validated these `warriors` can fit on the core with the given `config`.
     pub fn new(warriors: Vec<Warrior>, config: Config) -> Self {
         let core = Core::new(&config);
 
@@ -67,6 +68,7 @@ impl Mars {
         mars
     }
 
+    /// Load each warrior's instructions to core and initialize each warrior's task queue with the first task.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn load_warriors_to_core_and_initialize_task_queues(&mut self) {
@@ -97,6 +99,7 @@ impl Mars {
         }
     }
 
+    /// Determine the starting positions under the `Equal` warrior separation strategy.
     fn determine_starting_positions_equal(&self) -> Vec<usize> {
         let core_size = self.config.core_dimension.as_size();
         let num_warriors = self.warrior_contexts.len();
@@ -107,6 +110,8 @@ impl Mars {
             .collect()
     }
 
+    /// Determine the starting positions under the `Random` warrior separation strategy.
+    /// Note: This additionally shuffles the position order at the end, for even more randomization.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn determine_starting_positions_random(&self) -> Vec<usize> {
@@ -153,6 +158,7 @@ impl Mars {
         positions
     }
 
+    /// Reset the entire state (except `game_counter`) for a new game.
     pub fn reset(&mut self, loading_next_game: bool) {
         self.core.reset();
 
@@ -173,6 +179,7 @@ impl Mars {
         self.winner = None;
     }
 
+    /// Execute one instruction.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
     pub fn step(&mut self) {
@@ -198,6 +205,8 @@ impl Mars {
         }
     }
 
+    /// Find the next warrior still alive to execute his instruction next.
+    ///
     /// Example: In a 4-player game with warriors [0, 1, 2, 3], if `current_warrior_id` is 1,
     /// then we would try to find the next warrior alive at [2, 3], then advance turn counter, then try to find next warrior alive at [0, 1].
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
@@ -222,6 +231,7 @@ impl Mars {
             .find(|&warrior_id| self.warrior_contexts[warrior_id].is_alive())
     }
 
+    /// Set `game_over` flag and determine if there is a winner.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn set_game_over_and_determine_winner(&mut self) {
@@ -239,6 +249,9 @@ impl Mars {
         }
     }
 
+    /// Check if it is game over from:
+    /// - reaching the final turn.
+    /// - observing enough warriors have died.
     fn check_is_game_over(&self) -> bool {
         // The game ends when `turn_counter` reaches maximum value.
         if self.turn_counter >= self.config.turn_limit {
@@ -351,6 +364,7 @@ impl Mars {
         }
     }
 
+    /// Handle pre-decrement, then execute the instruction, then handle post-increment.
     fn execute_instruction(
         instruction: &Instruction,
         address: Address,
@@ -366,6 +380,7 @@ impl Mars {
         outcome
     }
 
+    /// Execute the instruction by calling the function corresponding to its `opcode`.
     fn execute_by_opcode(
         instruction: &Instruction,
         address: Address,
