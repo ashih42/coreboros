@@ -1,3 +1,8 @@
+//! `opcode_executor` module details the business logic for executing an instruction with any `Opcode` value.
+//!
+//! Note: All `exec_` functions assume pre-decrements have been done before entry, and post-increments will be done afterwards.
+//! Thus, these functions treat all 6 variants of indirect addressing modes in the same way, simply as indirect.
+
 use crate::{
     instruction::{
         Instruction, addressing_mode::AddressingMode, modifier::Modifier, operand::Operand,
@@ -7,9 +12,6 @@ use crate::{
     },
     warrior::warrior_id::WarriorId,
 };
-
-// NOTE: All `exec_` functions assume pre-decrements have been done before entry, and post-increments will be done after this function.
-// Thus, these functions can handle all 5 variants of indirect addressing modes in the same way simply as indirect addressing mode.
 
 /// `DAT` - Data.
 /// Executing this instruction kills the process.

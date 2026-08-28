@@ -1,5 +1,7 @@
 use crate::instruction::Instruction;
 
+/// `ArithmeticOperation` indicates the 5 kinds of math operations to be performed
+/// with the resulting value wrapped within [0, `core_size`).
 #[derive(Clone, Copy)]
 pub enum ArithmeticOperation {
     Addition,
