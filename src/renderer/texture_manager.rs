@@ -3,11 +3,11 @@ use macroquad::{prelude::ImageFormat, texture::Image};
 
 use crate::warrior::warrior_id::WarriorId;
 
+/// `TextureManager` is responsible for initializing and providing texture resources.
 #[derive(Default)]
 pub struct TextureManager {
     pub trophy: Option<egui::TextureHandle>,
     pub skull: Option<egui::TextureHandle>,
-    digit_0: Option<egui::TextureHandle>,
     digit_1: Option<egui::TextureHandle>,
     digit_2: Option<egui::TextureHandle>,
     digit_3: Option<egui::TextureHandle>,
@@ -48,7 +48,6 @@ impl TextureManager {
         init_tex!(self, egui_ctx, trophy);
         init_tex!(self, egui_ctx, skull);
 
-        init_tex!(self, egui_ctx, digit_0);
         init_tex!(self, egui_ctx, digit_1);
         init_tex!(self, egui_ctx, digit_2);
         init_tex!(self, egui_ctx, digit_3);
