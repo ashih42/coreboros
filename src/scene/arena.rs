@@ -1,24 +1,32 @@
-mod playback_manager;
-mod playback_speed;
-mod timer;
-
 use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
     color,
     game_context::GameContext,
-    instruction::{opcode::Opcode, operand::Operand, operation::Operation},
+    instruction::{operand::Operand, operation::Operation},
     mars::{Mars, address::Address, config::Config},
     renderer::Renderer,
     scene::{
         Scene,
-        arena::{playback_manager::PlaybackManager, playback_speed::PlaybackSpeed},
+        arena::{
+            display_mode::DisplayMode, grid_renderer::GridRenderer,
+            playback_manager::PlaybackManager, playback_speed::PlaybackSpeed,
+            ring_renderer::RingRenderer,
+        },
         scene_change::SceneChange,
     },
     warrior::warrior_id::{WarriorId, WarriorIdDisplay as _},
     warrior_queue::WarriorQueue,
 };
+
+mod display_mode;
+mod grid_renderer;
+mod playback_manager;
+mod playback_speed;
+mod rendering_utils;
+mod ring_renderer;
+mod timer;
 
 const LEFT_SIDEBAR_WIDTH: f32 = 220.0;
 const RIGHT_SIDEBAR_WIDTH: f32 = 360.0;
@@ -28,6 +36,7 @@ const RIGHT_SIDEBAR_WIDTH: f32 = 360.0;
 pub struct Arena {
     mars: Mars,
     selected_address: Address,
+    display_mode: DisplayMode,
     playback_manager: PlaybackManager,
     should_reset_scrollbar_in_coredump: bool,
     next_scene: Option<SceneChange>,
@@ -52,6 +61,7 @@ impl Arena {
         Self {
             mars: Mars::new(warrior_queue.into(), config),
             selected_address: 0,
+            display_mode: DisplayMode::Grid,
             playback_manager: PlaybackManager::default(),
             should_reset_scrollbar_in_coredump: false,
             next_scene: None,
@@ -108,6 +118,7 @@ impl Arena {
     fn start_new_game(&mut self) {
         self.stop();
 
+        self.selected_address = 0;
         let loading_next_game = self.mars.game_over;
         self.mars.reset(loading_next_game);
     }
@@ -167,44 +178,58 @@ impl Arena {
         }
     }
 
-    /// Move the selected address one step left on the grid view of the core.
+    /// Move the selected address one step left in the current view of the core.
     const fn move_selected_address_left(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
+        let (_, num_rings) = self.mars.config.core_dimension.as_ring_dimensions();
 
         #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
-        let new_address = (self.selected_address + core_size - 1) % core_size;
+        let new_address = match self.display_mode {
+            DisplayMode::Grid => (self.selected_address + core_size - 1) % core_size,
+            DisplayMode::Ring => (self.selected_address + num_rings) % core_size,
+        };
 
         self.set_selected_address(new_address);
     }
 
-    /// Move the selected address one step right on the grid view of the core.
+    /// Move the selected address one step right in the current view of the core.
     const fn move_selected_address_right(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
+        let (_, num_rings) = self.mars.config.core_dimension.as_ring_dimensions();
 
         #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
-        let new_address = (self.selected_address + 1) % core_size;
+        let new_address = match self.display_mode {
+            DisplayMode::Grid => (self.selected_address + 1) % core_size,
+            DisplayMode::Ring => (self.selected_address + core_size - num_rings) % core_size,
+        };
 
         self.set_selected_address(new_address);
     }
 
-    /// Move the selected address one step up on the grid view of the core.
+    /// Move the selected address one step up in the current view of the core.
     const fn move_selected_address_up(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
         let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
         #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
-        let new_address = (self.selected_address + core_size - width) % core_size;
+        let new_address = match self.display_mode {
+            DisplayMode::Grid => (self.selected_address + core_size - width) % core_size,
+            DisplayMode::Ring => (self.selected_address + core_size - 1) % core_size,
+        };
 
         self.set_selected_address(new_address);
     }
 
-    /// Move the selected address one step down on the grid view of the core.
+    /// Move the selected address one step down in the current view of the core.
     const fn move_selected_address_down(&mut self) {
         let core_size = self.mars.config.core_dimension.as_size();
         let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
 
         #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
-        let new_address = (self.selected_address + width) % core_size;
+        let new_address = match self.display_mode {
+            DisplayMode::Grid => (self.selected_address + width) % core_size,
+            DisplayMode::Ring => (self.selected_address + core_size + 1) % core_size,
+        };
 
         self.set_selected_address(new_address);
     }
@@ -229,7 +254,13 @@ impl Arena {
     }
 
     /// Process mouse events.
-    /// Select the address where LMB clicked in the grid view of the core.
+    fn process_mouse_events(&mut self, camera: &Camera2D) {
+        if self.display_mode == DisplayMode::Grid {
+            self.process_mouse_events_in_grid_view(camera);
+        }
+    }
+
+    /// Change the selected address to wherever mouse LMB clicked in the grid view of the core.
     #[allow(
         clippy::cast_precision_loss,
         clippy::cast_possible_truncation,
@@ -237,7 +268,7 @@ impl Arena {
         clippy::as_conversions,
         reason = "These casts are valid 👌"
     )]
-    fn process_mouse_events(&mut self, camera: &Camera2D) {
+    fn process_mouse_events_in_grid_view(&mut self, camera: &Camera2D) {
         let game_area_width = Self::get_game_area_width();
         let game_area_height = Self::get_game_area_height();
 
@@ -309,114 +340,28 @@ impl Arena {
     }
 
     /// Draw the entire core to the game area.
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::as_conversions,
-        reason = "These casts are valid 👌"
-    )]
     fn draw_game_area(&self) {
         let game_area_width = Self::get_game_area_width();
         let game_area_height = Self::get_game_area_height();
 
-        let (width, height) = self.mars.config.core_dimension.as_grid_dimensions();
-        let num_cells_per_row = width;
-        let num_cells_per_column = height;
-
-        let cell_width = game_area_width / (num_cells_per_row as f32);
-        let cell_height = game_area_height / (num_cells_per_column as f32);
-
-        // Draw cores
-        for x in 0..num_cells_per_row {
-            for y in 0..num_cells_per_column {
-                let address = self.get_address(x, y);
-
-                let cell = self.mars.core.get_cell(address);
-                let cell_color = color::get_mq_color(cell.operation_author.into());
-
-                let x = (x as f32) * cell_width;
-                let y = (y as f32) * cell_height;
-
-                draw_rectangle(x, y, cell_width, cell_height, cell_color);
-
-                let thickness = if address == self.selected_address {
-                    5.0
-                } else {
-                    1.0
-                };
-                draw_rectangle_lines(x, y, cell_width, cell_height, thickness, WHITE);
-
-                // Draw a diagonal line if this cell contains a `DAT` written by some warrior.
-                if cell.instruction.operation.opcode == Opcode::DAT
-                    && cell.operation_author.is_some()
-                {
-                    draw_line(x, y, x + cell_width, y + cell_height, 1.5, WHITE);
-                }
+        match self.display_mode {
+            DisplayMode::Grid => {
+                let renderer = GridRenderer::new(
+                    self.mars.config.core_dimension,
+                    game_area_width,
+                    game_area_height,
+                );
+                renderer.render(&self.mars, self.selected_address);
+            }
+            DisplayMode::Ring => {
+                let renderer = RingRenderer::new(
+                    self.mars.config.core_dimension,
+                    game_area_width,
+                    game_area_height,
+                );
+                renderer.render(&self.mars, self.selected_address);
             }
         }
-
-        // Draw all warrior's tasks
-        for warrior_id in self.get_warrior_rendering_order() {
-            let warrior_color = color::get_mq_color(Some(warrior_id));
-            let radius = 5.0;
-            let thickness = 1.0;
-
-            #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-            for &address in self.mars.warrior_contexts[warrior_id].task_queue.iter() {
-                let (x, y) = self.address_to_game_area_x_y(address);
-
-                draw_circle(x, y, radius, warrior_color);
-                draw_circle_lines(x, y, radius, thickness, WHITE);
-            }
-        }
-
-        // Draw current warrior's current task
-        {
-            let warrior_id = self.mars.current_warrior_id;
-            let warrior_color = color::get_mq_color(Some(warrior_id));
-            let radius = 5.0;
-            let thickness = 3.0;
-
-            if let Some(address) = self
-                .mars
-                .warrior_contexts
-                .get(warrior_id)
-                .and_then(|context| context.task_queue.peek())
-            {
-                let (x, y) = self.address_to_game_area_x_y(address);
-
-                draw_circle(x, y, radius, warrior_color);
-                draw_circle_lines(x, y, radius, thickness, WHITE);
-            }
-        }
-    }
-
-    /// Given `address`, return the center position of the rectangle corresponding to its location
-    /// in the grid view of the core.
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::as_conversions,
-        clippy::arithmetic_side_effects,
-        reason = "These operations are valid 👌"
-    )]
-    fn address_to_game_area_x_y(&self, address: usize) -> (f32, f32) {
-        let game_area_width = Self::get_game_area_width();
-        let game_area_height = Self::get_game_area_height();
-
-        let (width, height) = self.mars.config.core_dimension.as_grid_dimensions();
-
-        let cell_width = game_area_width / (width as f32);
-        let cell_height = game_area_height / (height as f32);
-
-        let y = address / width;
-        let x = address % width;
-
-        let rect_y = (y as f32) * cell_height;
-        let rect_x = (x as f32) * cell_width;
-
-        let circle_y = rect_y + cell_height / 2.0;
-        let circle_x = rect_x + cell_width / 2.0;
-
-        (circle_x, circle_y)
     }
 
     /// Define and draw all UI elements.
@@ -605,6 +550,13 @@ impl Arena {
             });
     }
 
+    const fn toggle_display_mode(&mut self) {
+        self.display_mode = match self.display_mode {
+            DisplayMode::Grid => DisplayMode::Ring,
+            DisplayMode::Ring => DisplayMode::Grid,
+        };
+    }
+
     /// Draw the right sidebar.
     ///
     /// The right sidebar includes:
@@ -622,6 +574,17 @@ impl Arena {
                     let width = (ui.available_width() - 16.0) / 3.0;
                     let height = 24.0;
 
+                    let toggle_display_mode_label = match self.display_mode {
+                        DisplayMode::Grid => "Ring View",
+                        DisplayMode::Ring => "Grid View",
+                    };
+                    self.add_button(
+                        ui,
+                        width,
+                        height,
+                        toggle_display_mode_label,
+                        Self::toggle_display_mode,
+                    );
                     self.add_button(ui, width, height, "New Game", Self::start_new_game);
                     self.add_button(ui, width, height, "To Editor", Self::go_to_editor_scene);
                 });
@@ -891,16 +854,17 @@ impl Arena {
             return;
         }
 
-        if let Some(warrior_id) = self
-            .get_warrior_rendering_order()
-            .rev()
-            .find(|&warrior_id| {
-                self.mars
-                    .warrior_contexts
-                    .get(warrior_id)
-                    .is_some_and(|context| context.task_queue.contains(address))
-            })
-            && let Some(warrior_icon) = renderer.texture_manager.get_warrior_icon(warrior_id)
+        if let Some(warrior_id) = rendering_utils::generate_warrior_rendering_order(
+            self.mars.warrior_contexts.len(),
+            self.mars.current_warrior_id,
+        )
+        .rev()
+        .find(|&warrior_id| {
+            self.mars
+                .warrior_contexts
+                .get(warrior_id)
+                .is_some_and(|context| context.task_queue.contains(address))
+        }) && let Some(warrior_icon) = renderer.texture_manager.get_warrior_icon(warrior_id)
         {
             ui.add(egui::Image::new(warrior_icon).max_width(ICON_WIDTH));
             return;
@@ -922,7 +886,7 @@ impl Arena {
         screen_height()
     }
 
-    /// Convert `(x, y)` to an address value to index into the `Core`.
+    /// Convert position `(x, y)` to an address value to index into the `Core`.
     #[inline]
     const fn get_address(&self, x: usize, y: usize) -> usize {
         let (width, _) = self.mars.config.core_dimension.as_grid_dimensions();
@@ -931,44 +895,5 @@ impl Arena {
         {
             y * width + x
         }
-    }
-
-    #[inline]
-    fn get_warrior_rendering_order(&self) -> impl DoubleEndedIterator<Item = WarriorId> {
-        generate_warrior_rendering_order(
-            self.mars.warrior_contexts.len(),
-            self.mars.current_warrior_id,
-        )
-    }
-}
-
-/// Find the appropriate order to draw the effects of warriors such that the current-turn warrior is drawn last,
-/// so his effects are drawn on top of those of other warriors.
-///
-/// Example: In a 4 player game, if it is currently player 2's turn, then the rendering order is [3, 0, 1, 2].
-#[inline]
-fn generate_warrior_rendering_order(
-    num_warriors: usize,
-    current_warrior_id: WarriorId,
-) -> impl DoubleEndedIterator<Item = WarriorId> {
-    #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
-    (0..num_warriors).map(move |i| (i + current_warrior_id + 1) % num_warriors)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generate_warrior_rendering_order() {
-        assert!(generate_warrior_rendering_order(4, 0).eq([1, 2, 3, 0]));
-        assert!(generate_warrior_rendering_order(4, 1).eq([2, 3, 0, 1]));
-        assert!(generate_warrior_rendering_order(4, 2).eq([3, 0, 1, 2]));
-        assert!(generate_warrior_rendering_order(4, 3).eq([0, 1, 2, 3]));
-
-        assert!(generate_warrior_rendering_order(2, 0).eq([1, 0]));
-        assert!(generate_warrior_rendering_order(2, 1).eq([0, 1]));
-
-        assert!(generate_warrior_rendering_order(1, 0).eq([0]));
     }
 }

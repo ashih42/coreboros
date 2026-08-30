@@ -49,9 +49,7 @@ Run the game with an HTTP server to play in the browser.
 
 ## Possibly Upcoming Features
 
-- Add a circular visualizer.
-
-- Add a console log bottom of screen (in Arena scene) to show who killed whom.
+- Add a game log at bottom of screen (in Arena scene) to show who killed whom.
   - Apply color highlighting around each Warrior's name.
 
 - Add a toggle to favorite/unfavorite warriors in menu.

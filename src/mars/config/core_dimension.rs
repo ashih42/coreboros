@@ -36,6 +36,7 @@ impl CoreDimension {
         }
     }
 
+    /// Return the number of cells defined in this `CoreDimension`.
     #[inline]
     pub const fn as_size(self) -> usize {
         match self {
@@ -49,6 +50,7 @@ impl CoreDimension {
         }
     }
 
+    /// Return (`width`, `height`) for the grid view of this `CoreDimension`.
     #[inline]
     pub const fn as_grid_dimensions(self) -> (usize, usize) {
         match self {
@@ -59,6 +61,45 @@ impl CoreDimension {
             Self::Small => (50, 40),
             Self::Medium => (80, 64),
             Self::Large => (100, 80),
+        }
+    }
+
+    /// Return (`num_sectors`, `num_rings`) for the ring view of this `CoreDimension`.
+    #[inline]
+    pub const fn as_ring_dimensions(self) -> (usize, usize) {
+        match self {
+            Self::Pico => (10, 2),
+            Self::Nano => (20, 4),
+            Self::Micro => (40, 8),
+            Self::Mini => (80, 16),
+            Self::Small => (100, 20),
+            Self::Medium => (160, 32),
+            Self::Large => (200, 40),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_as_grid_dimensions() {
+        for dimension in CoreDimension::list_all_values() {
+            let size = dimension.as_size();
+            let (width, height) = dimension.as_grid_dimensions();
+
+            assert_eq!(size, width * height);
+        }
+    }
+
+    #[test]
+    fn test_as_ring_dimensions() {
+        for dimension in CoreDimension::list_all_values() {
+            let size = dimension.as_size();
+            let (num_sectors, num_rings) = dimension.as_ring_dimensions();
+
+            assert_eq!(size, num_sectors * num_rings);
         }
     }
 }
