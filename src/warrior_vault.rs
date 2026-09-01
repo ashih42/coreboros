@@ -17,9 +17,9 @@ impl Default for WarriorVault {
             Warrior::nop_20(),
             Warrior::looping_paper(),
             Warrior::blur_scanner(),
-            Warrior::transposition_stone(), // TODO: Something might be wrong with my execution logic. Investigate!
+            Warrior::transposition_stone(),
             Warrior::self_bombing_stone(),
-            Warrior::self_vamping_vampire(), // TODO: Something might be wrong with my execution logic. Investigate!
+            Warrior::self_vamping_vampire(),
         ];
 
         let mut vault = Self { warriors };
