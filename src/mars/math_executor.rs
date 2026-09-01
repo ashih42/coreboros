@@ -67,32 +67,62 @@ impl MathExecutor {
         }
     }
 
+    /// Add `a` and `b`.
+    /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
     pub const fn add(&self, a: i32, b: i32) -> i32 {
-        self.wrap(a.wrapping_add(b))
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This operation is always safe."
+        )]
+        self.wrap(b + a)
     }
 
+    /// Subtract `a` from `b`, i.e. `b - a`.
+    /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
     pub const fn subtract(&self, a: i32, b: i32) -> i32 {
-        self.wrap(a.wrapping_sub(b))
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This operation is always safe."
+        )]
+        self.wrap(b - a)
     }
 
+    /// Multiply `a` and `b`.
+    /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
     const fn multiply(&self, a: i32, b: i32) -> i32 {
-        self.wrap(a.wrapping_mul(b))
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This operation is always safe."
+        )]
+        self.wrap(b * a)
     }
 
+    /// Divide `b` by `a`, i.e. `b / a`.
+    /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
     const fn divide(&self, a: i32, b: i32) -> Option<i32> {
-        if b == 0 {
+        if a == 0 {
             return None;
         }
 
-        Some(self.wrap(a.div_euclid(b)))
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This operation is always safe."
+        )]
+        Some(self.wrap(b / a))
     }
 
+    /// Get remainder of dividing `b` by `a`, i.e. `b % a`.
+    /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
     const fn modulo(&self, a: i32, b: i32) -> Option<i32> {
-        if b == 0 {
+        if a == 0 {
             return None;
         }
 
-        Some(self.wrap(a.rem_euclid(b)))
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This operation is always safe."
+        )]
+        Some(self.wrap(b % a))
     }
 
     pub const fn increment(&self, number: i32) -> i32 {
