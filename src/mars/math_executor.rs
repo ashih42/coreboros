@@ -130,6 +130,6 @@ impl MathExecutor {
     }
 
     pub const fn decrement(&self, number: i32) -> i32 {
-        self.subtract(number, 1)
+        self.add(number, -1)
     }
 }
