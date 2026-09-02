@@ -32,24 +32,21 @@ impl Default for Renderer {
 
 impl Renderer {
     /// Get string representation of usize `num`.
-    /// Note: The usize expected input value will not reach so high that
-    /// it cannot be converted to i32.
     #[inline]
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_possible_wrap,
-        clippy::as_conversions,
-        reason = "This conversion is safe because `num` is small."
-    )]
     pub fn usize_to_str(&self, num: usize) -> &str {
-        self.number_str_cache.i32_to_str(num as i32)
+        self.number_str_cache.get_str(num)
     }
 
     /// Get string representation of i32 `num`.
-    /// Note: The i32 expected input values should be a narrow range within [`-core_size/2`, `core_size/2 - 1`].
+    /// Note: The i32 is wrapped in range `[0, core_size - 1]`.
+    #[allow(
+        clippy::cast_sign_loss,
+        clippy::as_conversions,
+        reason = "This conversion is safe because `num` is always a small non-negative value."
+    )]
     #[inline]
     pub fn i32_to_str(&self, num: i32) -> &str {
-        self.number_str_cache.i32_to_str(num)
+        self.number_str_cache.get_str(num as usize)
     }
 
     /// Override the UI context style to use monospace fonts.
