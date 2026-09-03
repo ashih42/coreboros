@@ -16,8 +16,10 @@ use crate::{
         },
         scene_change::SceneChange,
     },
-    warrior::warrior_id::{WarriorId, WarriorIdDisplay as _},
-    warrior_queue::WarriorQueue,
+    warrior::{
+        Warrior,
+        warrior_id::{WarriorId, WarriorIdDisplay as _},
+    },
 };
 
 mod display_mode;
@@ -57,9 +59,9 @@ impl Scene for Arena {
 
 impl Arena {
     #[must_use]
-    pub fn new(warrior_queue: WarriorQueue, config: Config) -> Self {
+    pub fn new(warriors: Box<[Warrior]>, config: Config) -> Self {
         Self {
-            mars: Mars::new(warrior_queue.into(), config),
+            mars: Mars::new(warriors, config),
             selected_address: 0,
             display_mode: DisplayMode::Grid,
             playback_manager: PlaybackManager::default(),
@@ -125,14 +127,15 @@ impl Arena {
 
     /// Prepare a `SceneChange` message to go to `Editor` scene with the warriors in game.
     fn go_to_editor_scene(&mut self) {
-        let warrior_queue = self
+        let warriors = self
             .mars
             .warrior_contexts
             .iter()
-            .map(|context| &context.warrior)
-            .into();
+            .map(|context| context.warrior.clone())
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
 
-        self.next_scene = Some(SceneChange::to_editor(warrior_queue));
+        self.next_scene = Some(SceneChange::to_editor(warriors));
     }
 
     /// Process keyboard events.

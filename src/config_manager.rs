@@ -4,7 +4,7 @@ use crate::{
         core_initialization_strategy::CoreInitializationStrategy,
         warrior_separation_strategy::WarriorSeparationStrategy,
     },
-    warrior_queue::WarriorQueue,
+    warrior::Warrior,
 };
 
 /// `ConfigManager` contains the list of available values and the currently selected value for each feature,
@@ -89,18 +89,19 @@ impl ConfigManager {
         clippy::arithmetic_side_effects,
         reason = "These numbers are small because user input is limited."
     )]
-    pub fn validate_entry(&self, warrior_queue: &WarriorQueue) -> Result<(), String> {
-        let total_instructions = warrior_queue
+    pub fn validate_entry(&self, warriors: &[Warrior]) -> Result<(), String> {
+        let total_instructions = warriors
             .iter()
             .map(|warrior| warrior.instructions.len())
             .sum::<usize>();
 
-        let total_separation_distance = match warrior_queue.len() {
+        let num_warriors = warriors.len();
+        let total_separation_distance = match num_warriors {
             1 => 0,
             _ => match self.selected_warrior_separation_strategy {
                 WarriorSeparationStrategy::Equal => 0,
                 WarriorSeparationStrategy::Random => {
-                    self.selected_min_distance_between_warriors * warrior_queue.len()
+                    self.selected_min_distance_between_warriors * num_warriors
                 }
             },
         };
@@ -114,12 +115,11 @@ impl ConfigManager {
             Err(indoc::formatdoc!(
                 "Error: Not enough space in core for warriors.
                 
-                These {} warriors together have {total_instructions} instructions,
+                These {num_warriors} warriors together have {total_instructions} instructions,
                 and we need at least {total_separation_distance} cells between them,
                 so the required core size is at least {required_size} cells.
 
-                But the current core only has {available_size} cells.",
-                warrior_queue.len()
+                But the current core only has {available_size} cells."
             ))
         }
     }

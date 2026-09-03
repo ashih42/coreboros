@@ -27,14 +27,14 @@ impl Game {
     pub async fn run(&mut self) {
         loop {
             match self.scene.update(&mut self.context) {
-                Some(SceneChange::ToArena { warrior_queue }) => {
+                Some(SceneChange::ToArena { warriors }) => {
                     self.scene = Box::new(Arena::new(
-                        warrior_queue,
+                        warriors,
                         self.context.config_manager.get_config(),
                     ));
                 }
-                Some(SceneChange::ToEditor { warrior_queue }) => {
-                    self.scene = Box::new(Editor::new(warrior_queue));
+                Some(SceneChange::ToEditor { warriors }) => {
+                    self.scene = Box::new(Editor::new(warriors));
                 }
                 None => (),
             }

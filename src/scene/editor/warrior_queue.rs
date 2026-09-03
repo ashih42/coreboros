@@ -5,9 +5,9 @@ pub struct WarriorQueue {
     warriors: Vec<Warrior>,
 }
 
-/// Currently, `WarriorQueue` allows at most 8 `Warriors` because there is only a small number
-/// of easily distinguishable colors available for rendering.
-pub const MAX_CAPACITY: usize = 8;
+/// Currently, `WarriorQueue` allows at most 8 `Warrior` in the queue because there are only
+/// these many easily distinguishable colors available for rendering.
+const MAX_CAPACITY: usize = 8;
 
 impl Default for WarriorQueue {
     fn default() -> Self {
@@ -17,45 +17,41 @@ impl Default for WarriorQueue {
     }
 }
 
-impl<'a, I> From<I> for WarriorQueue
-where
-    I: Iterator<Item = &'a Warrior>,
-{
-    /// Convert from an iterator of `&Warrior` to `WarriorQueue`.
-    fn from(iter: I) -> Self {
+impl From<Box<[Warrior]>> for WarriorQueue {
+    /// Convert from a `Box<[Warrior]>` to `WarriorQueue`.
+    fn from(input: Box<[Warrior]>) -> Self {
         let mut warriors = Vec::with_capacity(MAX_CAPACITY);
-        warriors.extend(iter.take(MAX_CAPACITY).cloned());
+        warriors.extend(input.into_iter().take(MAX_CAPACITY));
 
         Self { warriors }
     }
 }
 
-impl From<WarriorQueue> for Vec<Warrior> {
-    /// Convert from `WarriorQueue` to `Vec<Warrior>`.
-    fn from(warrior_queue: WarriorQueue) -> Self {
-        warrior_queue.warriors
-    }
-}
-
 impl WarriorQueue {
+    pub fn into_boxed_warriors(self) -> Box<[Warrior]> {
+        self.warriors.into_boxed_slice()
+    }
+
     pub const fn get_capacity(&self) -> usize {
         self.warriors.capacity()
     }
 
-    pub fn is_ready(&self) -> bool {
-        (1..=self.warriors.capacity()).contains(&self.warriors.len())
+    /// Return a bool indicating if `WarriorQueue` contains a valid number of `Warrior` to enter the arena.
+    /// A valid number of `Warrior` is in range `[1, MAX_CAPACIT]`.
+    pub fn is_ready_for_arena(&self) -> bool {
+        (1..=MAX_CAPACITY).contains(&self.warriors.len())
     }
 
     pub const fn is_full(&self) -> bool {
-        self.warriors.len() == self.warriors.capacity()
+        self.warriors.len() == MAX_CAPACITY
     }
 
     pub const fn len(&self) -> usize {
         self.warriors.len()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Warrior> {
-        self.warriors.iter()
+    pub const fn as_slice(&self) -> &[Warrior] {
+        self.warriors.as_slice()
     }
 
     pub fn get(&self, index: usize) -> Option<&Warrior> {

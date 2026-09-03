@@ -7,15 +7,19 @@ use crate::{
     game_context::GameContext,
     mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     renderer::Renderer,
-    scene::{Scene, editor::text_editor::TextEditor, scene_change::SceneChange},
+    scene::{
+        Scene,
+        editor::{text_editor::TextEditor, warrior_queue::WarriorQueue},
+        scene_change::SceneChange,
+    },
     warrior::{Warrior, warrior_id::WarriorIdDisplay as _},
-    warrior_queue::WarriorQueue,
     warrior_vault::WarriorVault,
 };
 
 mod syntax_highlighter;
 mod syntax_kind;
 mod text_editor;
+mod warrior_queue;
 
 /// `Editor` is a UI-only scene where the user can load, edit, and save warriors,
 /// and change config values before entering the arena.
@@ -43,12 +47,12 @@ const RIGHT_SIDEBAR_WIDTH: f32 = 300.0;
 
 impl Editor {
     #[must_use]
-    pub fn new(warrior_queue: WarriorQueue) -> Self {
+    pub fn new(warriors: Box<[Warrior]>) -> Self {
         Self {
             text_editor: TextEditor::default(),
             console_text: String::new(),
             current_warrior: None,
-            warrior_queue,
+            warrior_queue: warriors.into(),
             next_scene: None,
         }
     }
@@ -230,8 +234,8 @@ impl Editor {
     /// Prepare a `SceneChange` message to go to `Arena` scene with the warriors in `warrior_queue`.
     /// Note: You must validate these warriors can enter the core under current config, before calling this method.
     fn enter_arena(&mut self) {
-        let warriors = std::mem::take(&mut self.warrior_queue);
-        self.next_scene = Some(SceneChange::to_arena(warriors));
+        let warrior_queue = std::mem::take(&mut self.warrior_queue);
+        self.next_scene = Some(SceneChange::to_arena(warrior_queue.into_boxed_warriors()));
     }
 
     /// Compile the current warrior, showing a success or error message in the console area.
@@ -241,7 +245,9 @@ impl Editor {
                 self.console_text = format!("Compiled \"{}\" successfully.", warrior.metadata.name);
                 self.current_warrior = Some(warrior);
             }
-            Err(err) => self.console_text = format!("{err:?}"),
+            Err(err) => {
+                self.console_text = format!("{err:?}");
+            }
         }
     }
 
@@ -298,13 +304,17 @@ impl Editor {
                     button_width,
                     button_height,
                     "Enter Arena",
-                    self.warrior_queue.is_ready(),
+                    self.warrior_queue.is_ready_for_arena(),
                     |editor| match game_ctx
                         .config_manager
-                        .validate_entry(&editor.warrior_queue)
+                        .validate_entry(editor.warrior_queue.as_slice())
                     {
-                        Ok(()) => editor.enter_arena(),
-                        Err(err_message) => editor.console_text = err_message,
+                        Ok(()) => {
+                            editor.enter_arena();
+                        }
+                        Err(err_message) => {
+                            editor.console_text = err_message;
+                        }
                     },
                 );
 

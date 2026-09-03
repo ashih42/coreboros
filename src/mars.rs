@@ -39,7 +39,7 @@ pub struct Mars {
 
 impl Mars {
     /// Precondition: `ConfigManager` has already validated these `warriors` can fit on the core with the given `config`.
-    pub fn new(warriors: Vec<Warrior>, config: Config) -> Self {
+    pub fn new(warriors: Box<[Warrior]>, config: Config) -> Self {
         let core = Core::new(&config);
 
         let warrior_contexts = warriors
