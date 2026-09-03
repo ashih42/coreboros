@@ -92,11 +92,13 @@ impl Editor {
                     .max_height(f32::INFINITY)
                     .stick_to_bottom(true)
                     .show(ui, |ui| {
-                        egui::TextEdit::multiline(&mut self.console_text)
-                            .min_size(ui.available_size())
-                            .desired_width(f32::INFINITY)
-                            .hint_text("Try \"dwarf\" and \"imp\" first.")
-                            .interactive(false)
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.console_text)
+                                .min_size(ui.available_size())
+                                .desired_width(f32::INFINITY)
+                                .hint_text("Hint: Try \"dwarf\" and \"imp\" first.")
+                                .interactive(false),
+                        );
                     });
             });
     }
