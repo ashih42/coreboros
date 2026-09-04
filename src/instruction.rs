@@ -1,7 +1,11 @@
 use std::fmt;
 
-use crate::instruction::{
-    modifier::Modifier, opcode::Opcode, operand::Operand, operation::Operation,
+use crate::{
+    instruction::{
+        addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode, operand::Operand,
+        operation::Operation,
+    },
+    rng,
 };
 
 pub mod addressing_mode;
@@ -10,17 +14,7 @@ pub mod opcode;
 pub mod operand;
 pub mod operation;
 
-/*
-DAT uses operand B (operand A is set to #0).
-
-Other one-operand operators use operand A (operand B is set to #0).
-
-I think these unused operands may be used by other instructions, so it is NOT appropriate to
-record these optional operands as Option<Operand>
-
-*/
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Instruction {
     pub operation: Operation,
     pub a: Operand,
@@ -39,8 +33,21 @@ impl Instruction {
         Self { operation, a, b }
     }
 
+    pub const fn dat(number: i32) -> Self {
+        Self {
+            operation: Operation {
+                opcode: Opcode::DAT,
+                modifier: Modifier::F,
+            },
+            a: Operand::direct(0),
+            b: Operand::direct(number),
+        }
+    }
+
+    /// Convert this single instruction to Load File format.
+    /// Reference: <https://corewar.co.uk/standards/icws94.htm#3.0>
     #[must_use]
-    pub fn to_load_file(&self) -> String {
+    pub fn as_load_file(&self) -> String {
         const OPERATION_WIDTH: usize = 11;
         const OPERAND_WIDTH: usize = 12;
 
@@ -55,16 +62,44 @@ impl Instruction {
         )
     }
 
-    /// `DAT.F $0, $0` is used as a strategy to initialize the core.
-    #[must_use]
-    pub const fn new_dat_f_0_0() -> Self {
+    /// Create a random `instruction` with its A and B numbers wrapped by `core_size`.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::as_conversions,
+        reason = "These conversions are safe because the numbers are small."
+    )]
+    pub fn random_instruction_wrapped(core_size: usize) -> Self {
+        let opcode = Opcode::random_opcode();
+        let modifier = Modifier::random_modifier();
+
+        let a_mode = AddressingMode::random_addressing_mode();
+        let a_number = rng::rand_range(0, core_size) as i32;
+
+        let b_mode = AddressingMode::random_addressing_mode();
+        let b_number = rng::rand_range(0, core_size) as i32;
+
         Self {
-            operation: Operation {
-                opcode: Opcode::DAT,
-                modifier: Modifier::F,
-            },
-            a: Operand::direct_zero(),
-            b: Operand::direct_zero(),
+            operation: Operation::new(opcode, modifier),
+            a: Operand::new(a_mode, a_number),
+            b: Operand::new(b_mode, b_number),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::instruction::addressing_mode::AddressingMode;
+
+    #[test]
+    fn inspect_sizes() {
+        println!("Opcode: {}", std::mem::size_of::<Opcode>());
+        println!("Modifier: {}", std::mem::size_of::<Modifier>());
+        println!("AddressingMode: {}", std::mem::size_of::<AddressingMode>());
+
+        println!("Operation: {}", std::mem::size_of::<Operation>());
+        println!("Operand: {}", std::mem::size_of::<Operand>());
+        println!("Instruction: {}", std::mem::size_of::<Instruction>());
     }
 }

@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use crate::rng;
+
 // Note: Most enums in this codebase use `strum` to derive to_string() and from_str(),
 // but `strum` cannot be used here to here handle string "}".
 // This is an open issue: <https://github.com/Peternator7/strum/issues/363>
@@ -38,7 +40,25 @@ pub enum AddressingMode {
     BIndirectPostIncrement,
 }
 
-// TODO: HEY TRY strum again but define the '}' with unicode character
+impl AddressingMode {
+    pub fn random_addressing_mode() -> Self {
+        static ALL_ADDRESSING_MODES: &[AddressingMode] = &[
+            AddressingMode::Immediate,
+            AddressingMode::Direct,
+            AddressingMode::AIndirect,
+            AddressingMode::BIndirect,
+            AddressingMode::AIndirectPreDecrement,
+            AddressingMode::AIndirectPostIncrement,
+            AddressingMode::BIndirectPreDecrement,
+            AddressingMode::BIndirectPostIncrement,
+        ];
+
+        let index = rng::rand_range(0, ALL_ADDRESSING_MODES.len());
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        ALL_ADDRESSING_MODES[index]
+    }
+}
 
 impl FromStr for AddressingMode {
     type Err = &'static str;
@@ -54,6 +74,21 @@ impl FromStr for AddressingMode {
             "<" => Ok(Self::BIndirectPreDecrement),
             ">" => Ok(Self::BIndirectPostIncrement),
             _ => Err("Invalid AddressingMode string"),
+        }
+    }
+}
+
+impl AsRef<str> for AddressingMode {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Immediate => "#",
+            Self::Direct => "$",
+            Self::AIndirect => "*",
+            Self::BIndirect => "@",
+            Self::AIndirectPreDecrement => "{",
+            Self::AIndirectPostIncrement => "}",
+            Self::BIndirectPreDecrement => "<",
+            Self::BIndirectPostIncrement => ">",
         }
     }
 }

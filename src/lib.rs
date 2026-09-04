@@ -1,12 +1,14 @@
-// pub mod core;
-pub mod core_cell;
-pub mod error_utils;
-pub mod instruction;
-// pub mod mars;
-pub mod parser;
-pub mod runtime_config;
-pub mod task;
-pub mod task_queue;
-pub mod utils;
+#![cfg_attr(
+    test,
+    allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)
+)]
+
+pub mod game;
+pub mod rng;
+pub mod scene;
 pub mod warrior;
-pub mod warrior_metadata;
+
+mod game_context;
+mod instruction;
+mod mars;
+mod parser;

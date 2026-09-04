@@ -11,10 +11,12 @@
 
 /// `file` is the top-level nonterminal. Start here.
 /// `file` may contain 0 or more lines.
+/// The last line may or may not end with a `NEWLINE`.
 file = {
-    SOI ~
-    (line? ~ NEWLINE)* ~
-    EOI
+      SOI
+    ~ (line? ~ NEWLINE)*
+    ~ line?
+    ~ EOI
 }
 
 /// `line` may have any of these 3 optional components in order:
