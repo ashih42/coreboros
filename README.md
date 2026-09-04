@@ -56,6 +56,9 @@ Run the game with an HTTP server to play in the browser.
 - Q: Which version of Core War is this project based on?
   - This project follows the [ICWS'94 Standard](https://corewar.co.uk/standards/icws94.htm). If you come from 42's variant of Core War, that knowledge won't help you here.
 
+- Q: Why did negative numbers in my code turn into positive numbers?
+  - All numbers are converted to non-negative values in range `[0, core_size - 1]`. This applies to the initial numbers in your code, as well as all resulting numbers from executing instructions.
+
 ## Current Limitations
 
 - Currently, Redcode macros (e.g. `EQU`, `FOR` loops) are not supported. However, you can still use [pMARS](http://www.koth.org/pmars/) to compile your Redcode to a load file format without macros, and then load that into Coreboros.
