@@ -475,81 +475,103 @@ impl Arena {
         let task_capacity_str = renderer.usize_to_str(warrior_context.task_queue.get_capacity());
         let wins_str = renderer.usize_to_str(warrior_context.num_wins);
 
-        // Use a thick colored border for the current-turn warrior.
-        let card_stroke = if warrior_id == self.mars.current_warrior_id {
+        // Use a lighter color border for the current-turn warrior.
+        let frame_stroke = if warrior_id == self.mars.current_warrior_id {
             egui::Stroke::new(1.0, egui::Color32::WHITE)
         } else {
             egui::Stroke::new(1.0, egui::Color32::GRAY)
         };
 
-        // Draw a container card for the warrior.
+        // Use a darker background color for the current-turn warrior.
+        let frame_bg_color = if warrior_id == self.mars.current_warrior_id {
+            egui::Color32::from_rgb(20, 20, 20)
+        } else {
+            egui::Color32::from_rgb(40, 40, 40)
+        };
+
+        // Draw a frame for the warrior.
         egui::Frame::group(ui.style())
-            .fill(egui::Color32::from_rgb(40, 40, 40))
-            .stroke(card_stroke)
+            .fill(frame_bg_color)
+            .stroke(frame_stroke)
             .inner_margin(8.0)
             .show(ui, |ui| {
-                ui.set_min_width(LEFT_SIDEBAR_WIDTH - 40.0);
+                let response = ui
+                    .scope(|ui| {
+                        ui.set_min_width(LEFT_SIDEBAR_WIDTH - 40.0);
 
-                ui.horizontal(|ui| {
-                    // Draw a colored square indicating this warrior's color.
-                    let (rect, _) =
-                        ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
-                    ui.painter().rect_filled(rect, 2.0, warrior_color);
+                        ui.horizontal(|ui| {
+                            // Draw a colored square indicating this warrior's color.
+                            let (rect, _) = ui
+                                .allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
+                            ui.painter().rect_filled(rect, 2.0, warrior_color);
 
-                    ui.add_space(4.0);
+                            ui.add_space(4.0);
 
-                    // Draw a skull if this warrior is dead.
-                    if !warrior_context.is_alive()
-                        && let Some(skull) = &renderer.texture_manager.skull
-                    {
-                        ui.add(egui::Image::new(skull).max_width(16.0));
-                    }
+                            // Draw a skull if this warrior is dead.
+                            if !warrior_context.is_alive()
+                                && let Some(skull) = &renderer.texture_manager.skull
+                            {
+                                ui.add(egui::Image::new(skull).max_width(16.0));
+                            }
 
-                    // Draw a trophy if this warrior is the winner.
-                    if let Some(winner_id) = self.mars.winner
-                        && winner_id == warrior_id
-                        && let Some(trophy) = &renderer.texture_manager.trophy
-                    {
-                        ui.add(egui::Image::new(trophy).max_width(16.0));
-                    }
+                            // Draw a trophy if this warrior is the winner.
+                            if let Some(winner_id) = self.mars.winner
+                                && winner_id == warrior_id
+                                && let Some(trophy) = &renderer.texture_manager.trophy
+                            {
+                                ui.add(egui::Image::new(trophy).max_width(16.0));
+                            }
 
-                    // Draw "Warrior X".
-                    ui.colored_label(egui::Color32::WHITE, "Warrior");
-                    ui.colored_label(
-                        egui::Color32::WHITE,
-                        renderer.usize_to_str(warrior_id.as_display_id()),
-                    );
-                });
+                            // Draw "Warrior X".
+                            ui.colored_label(egui::Color32::WHITE, "Warrior");
+                            ui.colored_label(
+                                egui::Color32::WHITE,
+                                renderer.usize_to_str(warrior_id.as_display_id()),
+                            );
+                        });
 
-                ui.add_space(2.0);
+                        ui.add_space(2.0);
 
-                // Draw the warrior's name in the warrior's color.
-                ui.label(
-                    egui::RichText::new(warrior_name)
-                        .size(20.0)
-                        .color(warrior_color),
-                );
+                        // Draw the warrior's name in the warrior's color.
+                        ui.label(
+                            egui::RichText::new(warrior_name)
+                                .size(20.0)
+                                .color(warrior_color),
+                        );
 
-                ui.add_space(2.0);
+                        ui.add_space(2.0);
 
-                // Draw number of tasks for this warrior.
-                ui.horizontal(|ui| {
-                    ui.label("Tasks:");
-                    ui.label(tasks_str);
-                    ui.label("/");
-                    ui.label(task_capacity_str);
-                    if warrior_context.task_queue.is_full() {
-                        ui.label("(Full)");
-                    }
-                });
+                        // Draw number of tasks for this warrior.
+                        ui.horizontal(|ui| {
+                            ui.label("Tasks:");
+                            ui.label(tasks_str);
+                            ui.label("/");
+                            ui.label(task_capacity_str);
+                            if warrior_context.task_queue.is_full() {
+                                ui.label("(Full)");
+                            }
+                        });
 
-                ui.add_space(2.0);
+                        ui.add_space(2.0);
 
-                // Draw number of wins for this warrior.
-                ui.horizontal(|ui| {
-                    ui.label("Wins:");
-                    ui.label(wins_str);
-                });
+                        // Draw number of wins for this warrior.
+                        ui.horizontal(|ui| {
+                            ui.label("Wins:");
+                            ui.label(wins_str);
+                        });
+                    })
+                    .response;
+
+                // Draw a thick red X over the entire frame if this warrior is dead.
+                if !warrior_context.is_alive() {
+                    let rect = response.rect;
+                    let painter = ui.painter();
+
+                    let stroke = egui::Stroke::new(4.0, egui::Color32::from_rgb(220, 0, 0));
+
+                    painter.line_segment([rect.left_top(), rect.right_bottom()], stroke);
+                    painter.line_segment([rect.right_top(), rect.left_bottom()], stroke);
+                }
             });
     }
 
