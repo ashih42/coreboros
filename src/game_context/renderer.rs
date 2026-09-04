@@ -1,6 +1,8 @@
 use egui_macroquad::egui;
 
-use crate::renderer::{number_str_cache::NumberStrCache, texture_manager::TextureManager};
+use crate::game_context::renderer::{
+    number_str_cache::NumberStrCache, texture_manager::TextureManager,
+};
 
 mod number_str_cache;
 mod texture_manager;

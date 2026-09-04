@@ -3,10 +3,9 @@ use macroquad::prelude::*;
 
 use crate::{
     color,
-    game_context::GameContext,
+    game_context::{GameContext, renderer::Renderer},
     instruction::{operand::Operand, operation::Operation},
     mars::{Mars, address::Address, config::Config},
-    renderer::Renderer,
     scene::{
         Scene,
         arena::{

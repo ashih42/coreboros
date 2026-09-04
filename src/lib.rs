@@ -9,10 +9,7 @@ pub mod scene;
 pub mod warrior;
 
 mod color;
-mod config_manager;
 mod game_context;
 mod instruction;
 mod mars;
 mod parser;
-mod renderer;
-mod warrior_vault;

@@ -1,4 +1,10 @@
-use crate::{config_manager::ConfigManager, renderer::Renderer, warrior_vault::WarriorVault};
+use crate::game_context::{
+    config_manager::ConfigManager, renderer::Renderer, warrior_vault::WarriorVault,
+};
+
+pub mod config_manager;
+pub mod renderer;
+pub mod warrior_vault;
 
 /// `GameContext` contains persistent game components that are:
 /// - used in multiple scenes.

@@ -3,17 +3,16 @@ use macroquad::prelude::*;
 
 use crate::{
     color,
-    config_manager::ConfigManager,
-    game_context::GameContext,
+    game_context::{
+        GameContext, config_manager::ConfigManager, renderer::Renderer, warrior_vault::WarriorVault,
+    },
     mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
-    renderer::Renderer,
     scene::{
         Scene,
         editor::{text_editor::TextEditor, warrior_queue::WarriorQueue},
         scene_change::SceneChange,
     },
     warrior::{Warrior, warrior_id::WarriorIdDisplay as _},
-    warrior_vault::WarriorVault,
 };
 
 mod syntax_highlighter;

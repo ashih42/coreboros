@@ -24,7 +24,11 @@ macro_rules! init_tex {
     ($self:ident, $egui_ctx:ident, $name:ident) => {
         $self.$name.get_or_insert_with(|| {
             // Load image to bytes.
-            let bytes = include_bytes!(concat!("../../assets/images/", stringify!($name), ".png"));
+            let bytes = include_bytes!(concat!(
+                "../../../assets/images/",
+                stringify!($name),
+                ".png"
+            ));
 
             // Convert bytes to macroquad image.
             let mq_image = Image::from_file_with_format(bytes, Some(ImageFormat::Png)).unwrap();
