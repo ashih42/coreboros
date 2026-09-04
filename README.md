@@ -24,6 +24,21 @@ Run the game with an HTTP server to play in the browser.
 ./scripts/run-web-game.sh
 ```
 
+## Gameplay Controls
+
+- `Arena` scene:
+  - `Left Mouse Button` - Click on a cell in Grid View to select that address.
+  - `ARROW KEYS` - Move the selected address.
+  - `C` - Select the address of the current warrior's current task.
+  - `S` - Step once.
+  - `Spacebar` - Play or pause.
+  - `F` - Select the next speed.
+  - `T` - Play at Turbo (fastest) speed.
+  - `N` - Start a new game.
+
+- `Editor` scene:
+  - `L` - Load the compiled and valid current warrior to the queue.
+
 ## About Core War
 
 - Q: What is Core War?
