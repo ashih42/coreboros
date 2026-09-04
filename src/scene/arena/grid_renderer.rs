@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 
 use crate::{
-    color,
+    game_context::renderer::color,
     instruction::opcode::Opcode,
     mars::{Mars, address::Address, config::core_dimension::CoreDimension},
     scene::arena::rendering_utils,

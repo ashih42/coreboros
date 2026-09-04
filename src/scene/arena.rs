@@ -2,8 +2,10 @@ use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
-    color,
-    game_context::{GameContext, renderer::Renderer},
+    game_context::{
+        GameContext,
+        renderer::{Renderer, color},
+    },
     instruction::{operand::Operand, operation::Operation},
     mars::{Mars, address::Address, config::Config},
     scene::{

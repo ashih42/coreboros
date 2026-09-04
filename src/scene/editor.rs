@@ -2,9 +2,11 @@ use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
-    color,
     game_context::{
-        GameContext, config_manager::ConfigManager, renderer::Renderer, warrior_vault::WarriorVault,
+        GameContext,
+        config_manager::ConfigManager,
+        renderer::{Renderer, color},
+        warrior_vault::WarriorVault,
     },
     mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     scene::{

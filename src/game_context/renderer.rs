@@ -4,6 +4,8 @@ use crate::game_context::renderer::{
     number_str_cache::NumberStrCache, texture_manager::TextureManager,
 };
 
+pub mod color;
+
 mod number_str_cache;
 mod texture_manager;
 
