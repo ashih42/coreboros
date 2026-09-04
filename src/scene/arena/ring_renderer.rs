@@ -20,7 +20,7 @@ pub struct RingRenderer {
     sector_angle_in_degrees: f32,
 }
 
-const BORDER_THICKNESS: f32 = 1.0;
+const BORDER_THICKNESS: f32 = 2.0;
 const BORDER_COLOR: macroquad::color::Color = WHITE;
 
 impl RingRenderer {
