@@ -19,17 +19,17 @@ pub struct Renderer {
 
 impl Default for Renderer {
     fn default() -> Self {
-        let mut texture_manager = TextureManager::default();
-        let number_str_cache = NumberStrCache::default();
+        let mut texture_manager = None;
 
         egui_macroquad::cfg(|egui_ctx| {
             Self::apply_monospace_font_style(egui_ctx);
-            texture_manager.register_textures(egui_ctx);
+            texture_manager = Some(TextureManager::new(egui_ctx));
         });
 
         Self {
-            texture_manager,
-            number_str_cache,
+            #[allow(clippy::unwrap_used, reason = "This unwrap cannot fail.")]
+            texture_manager: texture_manager.unwrap(),
+            number_str_cache: NumberStrCache::default(),
         }
     }
 }

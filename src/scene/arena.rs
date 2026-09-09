@@ -509,18 +509,21 @@ impl Arena {
                             ui.add_space(4.0);
 
                             // Draw a skull if this warrior is dead.
-                            if !warrior_context.is_alive()
-                                && let Some(skull) = &renderer.texture_manager.skull
-                            {
-                                ui.add(egui::Image::new(skull).max_width(16.0));
+                            if !warrior_context.is_alive() {
+                                ui.add(
+                                    egui::Image::new(&renderer.texture_manager.skull)
+                                        .max_width(16.0),
+                                );
                             }
 
                             // Draw a trophy if this warrior is the winner.
                             if let Some(winner_id) = self.mars.winner
                                 && winner_id == warrior_id
-                                && let Some(trophy) = &renderer.texture_manager.trophy
                             {
-                                ui.add(egui::Image::new(trophy).max_width(16.0));
+                                ui.add(
+                                    egui::Image::new(&renderer.texture_manager.trophy)
+                                        .max_width(16.0),
+                                );
                             }
 
                             // Draw "Warrior X".
@@ -567,7 +570,6 @@ impl Arena {
                 if !warrior_context.is_alive() {
                     let rect = response.rect;
                     let painter = ui.painter();
-
                     let stroke = egui::Stroke::new(4.0, egui::Color32::from_rgb(220, 0, 0));
 
                     painter.line_segment([rect.left_top(), rect.right_bottom()], stroke);
@@ -860,26 +862,27 @@ impl Arena {
     ) {
         const ICON_WIDTH: f32 = 20.0;
 
-        // If the current warrior's current task is at this address, draw a tinted warrior icon.
+        // Draw a TINTED warrior icon at this address, if the current warrior's current task is at this address.
         if let Some(task) = self
             .mars
             .warrior_contexts
             .get(self.mars.current_warrior_id)
             .and_then(|context| context.task_queue.peek())
             && task == address
-            && let Some(warrior_icon) = renderer
-                .texture_manager
-                .get_warrior_icon(self.mars.current_warrior_id)
         {
-            let color = color::get_egui_color32(Some(self.mars.current_warrior_id));
             ui.add(
-                egui::Image::new(warrior_icon)
-                    .max_width(ICON_WIDTH)
-                    .tint(color),
+                egui::Image::new(
+                    renderer
+                        .texture_manager
+                        .get_warrior_icon(self.mars.current_warrior_id),
+                )
+                .max_width(ICON_WIDTH)
+                .tint(color::get_egui_color32(Some(self.mars.current_warrior_id))),
             );
             return;
         }
 
+        // Draw a warrior icon at this address, if a last-to-render warrior has a task at this address.
         if let Some(warrior_id) = rendering_utils::generate_warrior_rendering_order(
             self.mars.warrior_contexts.len(),
             self.mars.current_warrior_id,
@@ -890,9 +893,11 @@ impl Arena {
                 .warrior_contexts
                 .get(warrior_id)
                 .is_some_and(|context| context.task_queue.contains(address))
-        }) && let Some(warrior_icon) = renderer.texture_manager.get_warrior_icon(warrior_id)
-        {
-            ui.add(egui::Image::new(warrior_icon).max_width(ICON_WIDTH));
+        }) {
+            ui.add(
+                egui::Image::new(renderer.texture_manager.get_warrior_icon(warrior_id))
+                    .max_width(ICON_WIDTH),
+            );
             return;
         }
 
