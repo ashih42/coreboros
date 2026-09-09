@@ -1,5 +1,3 @@
-use egui_macroquad::egui;
-
 use crate::game_context::renderer::{
     number_str_cache::NumberStrCache, texture_manager::TextureManager,
 };
@@ -7,6 +5,7 @@ use crate::game_context::renderer::{
 pub mod color;
 
 mod number_str_cache;
+mod style;
 mod texture_manager;
 
 /// `Renderer` has 2 responsibilities related to rendering:
@@ -22,7 +21,7 @@ impl Default for Renderer {
         let mut texture_manager = None;
 
         egui_macroquad::cfg(|egui_ctx| {
-            Self::apply_monospace_font_style(egui_ctx);
+            style::apply_monospace_font_style(egui_ctx);
             texture_manager = Some(TextureManager::new(egui_ctx));
         });
 
@@ -51,28 +50,5 @@ impl Renderer {
     #[inline]
     pub fn i32_to_str(&self, num: i32) -> &str {
         self.number_str_cache.get_str(num as usize)
-    }
-
-    /// Override the UI context style to use monospace fonts.
-    fn apply_monospace_font_style(egui_ctx: &egui::Context) {
-        let mut style = (*egui_ctx.style()).clone();
-
-        style
-            .text_styles
-            .insert(egui::TextStyle::Heading, egui::FontId::monospace(22.0));
-
-        style
-            .text_styles
-            .insert(egui::TextStyle::Body, egui::FontId::monospace(14.0));
-
-        style
-            .text_styles
-            .insert(egui::TextStyle::Button, egui::FontId::monospace(14.0));
-
-        style
-            .text_styles
-            .insert(egui::TextStyle::Small, egui::FontId::monospace(11.0));
-
-        egui_ctx.set_style(style);
     }
 }
