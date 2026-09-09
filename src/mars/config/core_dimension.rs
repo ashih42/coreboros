@@ -38,16 +38,11 @@ impl CoreDimension {
 
     /// Return the number of cells defined in this `CoreDimension`.
     #[inline]
+    #[allow(clippy::arithmetic_side_effects, reason = "This operation is safe.")]
     pub const fn as_size(self) -> usize {
-        match self {
-            Self::Pico => 20,
-            Self::Nano => 80,
-            Self::Micro => 320,
-            Self::Mini => 1_280,
-            Self::Small => 2_000,
-            Self::Medium => 5_120,
-            Self::Large => 8_000,
-        }
+        let (width, height) = self.as_grid_dimensions();
+
+        width * height
     }
 
     /// Return (`width`, `height`) for the grid view of this `CoreDimension`.
