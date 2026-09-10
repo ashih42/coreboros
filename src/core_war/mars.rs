@@ -64,8 +64,9 @@ impl Mars {
             .core_placement_planner
             .determine_starting_addresses(&self.core, warriors);
 
-        for (warrior_id, warrior) in warriors.iter().enumerate() {
-            let starting_position = starting_positions[warrior_id];
+        for (id, warrior) in warriors.iter().enumerate() {
+            let warrior_id = WarriorId(id);
+            let starting_position = starting_positions[warrior_id.0];
 
             // Copy instructions to core.
             for (i, instruction) in warrior.instructions.iter().enumerate() {
@@ -77,7 +78,7 @@ impl Mars {
 
             // Push initial task.
             let task = (starting_position + warrior.origin) % core_size;
-            self.task_queues[warrior_id].push_if_not_full(task);
+            self.task_queues[warrior_id.0].push_if_not_full(task);
         }
     }
 
@@ -98,7 +99,7 @@ impl Mars {
     pub fn step(&mut self, current_warrior_id: WarriorId) {
         Self::execute_task(
             current_warrior_id,
-            &mut self.task_queues[current_warrior_id],
+            &mut self.task_queues[current_warrior_id.0],
             &mut self.core,
         );
     }

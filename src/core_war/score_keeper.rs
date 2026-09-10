@@ -13,7 +13,7 @@ impl ScoreKeeper {
 
     pub fn get_wins(&self, warrior_id: WarriorId) -> usize {
         #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-        self.num_wins[warrior_id]
+        self.num_wins[warrior_id.0]
     }
 
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
@@ -22,6 +22,6 @@ impl ScoreKeeper {
         reason = "The number of wins are small numbers."
     )]
     pub fn increment_wins(&mut self, warrior_id: WarriorId) {
-        self.num_wins[warrior_id] += 1;
+        self.num_wins[warrior_id.0] += 1;
     }
 }

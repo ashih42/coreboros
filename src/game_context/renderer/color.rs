@@ -29,14 +29,14 @@ pub const fn get_egui_color32(warrior_id: Option<WarriorId>) -> egui::Color32 {
     const DARK_GRAY: egui::Color32 = egui::Color32::DARK_GRAY;
 
     match warrior_id {
-        Some(0) => DARK_GREEN,
-        Some(1) => DARK_RED,
-        Some(2) => BLUE,
-        Some(3) => PURPLE,
-        Some(4) => LIME_GREEN,
-        Some(5) => ORANGE,
-        Some(6) => PINK,
-        Some(7) => BROWN,
+        Some(WarriorId(0)) => DARK_GREEN,
+        Some(WarriorId(1)) => DARK_RED,
+        Some(WarriorId(2)) => BLUE,
+        Some(WarriorId(3)) => PURPLE,
+        Some(WarriorId(4)) => LIME_GREEN,
+        Some(WarriorId(5)) => ORANGE,
+        Some(WarriorId(6)) => PINK,
+        Some(WarriorId(7)) => BROWN,
         _ => DARK_GRAY,
     }
 }

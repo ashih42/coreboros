@@ -29,17 +29,17 @@ impl From<Option<WarriorId>> for CellSlotAuthor {
     fn from(value: Option<WarriorId>) -> Self {
         match value {
             None => Self::None,
-            Some(0) => Self::Warrior0,
-            Some(1) => Self::Warrior1,
-            Some(2) => Self::Warrior2,
-            Some(3) => Self::Warrior3,
-            Some(4) => Self::Warrior4,
-            Some(5) => Self::Warrior5,
-            Some(6) => Self::Warrior6,
-            Some(7) => Self::Warrior7,
+            Some(WarriorId(0)) => Self::Warrior0,
+            Some(WarriorId(1)) => Self::Warrior1,
+            Some(WarriorId(2)) => Self::Warrior2,
+            Some(WarriorId(3)) => Self::Warrior3,
+            Some(WarriorId(4)) => Self::Warrior4,
+            Some(WarriorId(5)) => Self::Warrior5,
+            Some(WarriorId(6)) => Self::Warrior6,
+            Some(WarriorId(7)) => Self::Warrior7,
 
             #[allow(clippy::unreachable, reason = "The game only allows up to 8 warriors.")]
-            Some(warrior_id) => unreachable!("Invalid warrior_id: {warrior_id}"),
+            Some(warrior_id) => unreachable!("Invalid warrior_id: {}", warrior_id.0),
         }
     }
 }
@@ -49,14 +49,14 @@ impl From<CellSlotAuthor> for Option<WarriorId> {
     fn from(author: CellSlotAuthor) -> Self {
         match author {
             CellSlotAuthor::None => None,
-            CellSlotAuthor::Warrior0 => Some(0),
-            CellSlotAuthor::Warrior1 => Some(1),
-            CellSlotAuthor::Warrior2 => Some(2),
-            CellSlotAuthor::Warrior3 => Some(3),
-            CellSlotAuthor::Warrior4 => Some(4),
-            CellSlotAuthor::Warrior5 => Some(5),
-            CellSlotAuthor::Warrior6 => Some(6),
-            CellSlotAuthor::Warrior7 => Some(7),
+            CellSlotAuthor::Warrior0 => Some(WarriorId(0)),
+            CellSlotAuthor::Warrior1 => Some(WarriorId(1)),
+            CellSlotAuthor::Warrior2 => Some(WarriorId(2)),
+            CellSlotAuthor::Warrior3 => Some(WarriorId(3)),
+            CellSlotAuthor::Warrior4 => Some(WarriorId(4)),
+            CellSlotAuthor::Warrior5 => Some(WarriorId(5)),
+            CellSlotAuthor::Warrior6 => Some(WarriorId(6)),
+            CellSlotAuthor::Warrior7 => Some(WarriorId(7)),
         }
     }
 }

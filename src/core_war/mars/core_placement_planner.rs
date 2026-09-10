@@ -56,24 +56,24 @@ impl CorePlacementPlanner {
             .map(|warrior| warrior.instructions.len())
             .collect::<Vec<_>>();
 
-        let separation_buckets = self.initialize_buckets(core, warriors);
-
-        let mut assignments = Vec::with_capacity(num_warriors);
-        let mut address = 0;
-
-        // TODO: Create a get_random_warrior_ids() util function.
-        let warrior_ids = {
-            let mut warrior_ids = (0..num_warriors).collect::<Vec<_>>();
+        let shuffled_warrior_ids = {
+            let mut warrior_ids = WarriorId::list_all_warrior_ids(num_warriors).collect::<Vec<_>>();
             rng::shuffle(&mut warrior_ids);
             warrior_ids
         };
 
-        for (&warrior_id, &separation) in warrior_ids.iter().zip(separation_buckets.iter()) {
+        let separation_buckets = self.initialize_separation_buckets(core, warriors);
+
+        let mut assignments = Vec::with_capacity(num_warriors);
+        let mut address = 0;
+
+        for (&warrior_id, &separation) in shuffled_warrior_ids.iter().zip(separation_buckets.iter())
+        {
             assignments.push(WarriorToAddressAssignment::new(warrior_id, address));
-            address += instruction_lengths[warrior_id] + separation;
+            address += instruction_lengths[warrior_id.0] + separation;
         }
 
-        assignments.sort_by_key(|assignment| assignment.warrior_id);
+        assignments.sort_by_key(|assignment| assignment.warrior_id.0);
 
         assignments
             .iter()
@@ -81,11 +81,11 @@ impl CorePlacementPlanner {
             .collect()
     }
 
-    /// Return "buckets", which represents the blocks of empty cells separating different warriors' instructions.
+    /// Return "separation buckets", which represents the blocks of empty cells separating different warriors' instructions.
     /// Example: buckets [10, 20] means there are 10 empty cells between warriors 0 and 1; and 20 empty cells between warriors 1 and 0.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn initialize_buckets(&self, core: &Core, warriors: &[Warrior]) -> Vec<usize> {
+    fn initialize_separation_buckets(&self, core: &Core, warriors: &[Warrior]) -> Vec<usize> {
         let core_size = core.get_size();
         let num_warriors = warriors.len();
 

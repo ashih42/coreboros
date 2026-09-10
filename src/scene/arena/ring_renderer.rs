@@ -248,14 +248,14 @@ impl RingRenderer {
             current_warrior_id,
         ) {
             #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-            for &address in mars.task_queues[warrior_id].iter() {
+            for &address in mars.task_queues[warrior_id.0].iter() {
                 self.draw_task(address, warrior_id, false);
             }
         }
 
         // Draw current warrior's current task.
         #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-        if let Some(address) = mars.task_queues[current_warrior_id].peek() {
+        if let Some(address) = mars.task_queues[current_warrior_id.0].peek() {
             self.draw_task(address, current_warrior_id, true);
         }
     }

@@ -71,14 +71,14 @@ impl TextureManager {
     /// return `digit_1` for warrior 0, and so on.
     pub const fn get_warrior_icon(&self, warrior_id: WarriorId) -> &TextureHandle {
         match warrior_id {
-            0 => &self.digit_1,
-            1 => &self.digit_2,
-            2 => &self.digit_3,
-            3 => &self.digit_4,
-            4 => &self.digit_5,
-            5 => &self.digit_6,
-            6 => &self.digit_7,
-            7 => &self.digit_8,
+            WarriorId(0) => &self.digit_1,
+            WarriorId(1) => &self.digit_2,
+            WarriorId(2) => &self.digit_3,
+            WarriorId(3) => &self.digit_4,
+            WarriorId(4) => &self.digit_5,
+            WarriorId(5) => &self.digit_6,
+            WarriorId(6) => &self.digit_7,
+            WarriorId(7) => &self.digit_8,
             #[allow(
                 clippy::unreachable,
                 reason = "All possible values of warrior_id are handled above."

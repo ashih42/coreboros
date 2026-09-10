@@ -37,7 +37,7 @@ impl CoreWar {
             game_counter: 0,
             turn_counter: 0,
             cycle_counter: 0,
-            current_warrior_id: 0,
+            current_warrior_id: WarriorId(0),
             game_over: false,
             winner: None,
         }
@@ -54,7 +54,7 @@ impl CoreWar {
 
         self.turn_counter = 0;
         self.cycle_counter = 0;
-        self.current_warrior_id = 0;
+        self.current_warrior_id = WarriorId(0);
         self.game_over = false;
         self.winner = None;
     }
@@ -90,8 +90,7 @@ impl CoreWar {
             return true;
         }
 
-        let num_warriors_alive = self
-            .get_warrior_ids()
+        let num_warriors_alive = WarriorId::list_all_warrior_ids(self.warriors.len())
             .filter(|&warrior_id| self.is_warrior_alive(warrior_id))
             .count();
 
@@ -111,7 +110,8 @@ impl CoreWar {
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn find_next_warrior_alive(&mut self) -> Option<WarriorId> {
         // Check first pass - from next player to last player.
-        if let Some(warrior_id) = (self.current_warrior_id + 1..self.warriors.len())
+        if let Some(warrior_id) = ((self.current_warrior_id.0 + 1)..self.warriors.len())
+            .map(WarriorId)
             .find(|&warrior_id| self.is_warrior_alive(warrior_id))
         {
             return Some(warrior_id);
@@ -125,14 +125,16 @@ impl CoreWar {
         }
 
         // Check second pass - from first player to current player.
-        (0..=self.current_warrior_id).find(|&warrior_id| self.is_warrior_alive(warrior_id))
+        (0..=self.current_warrior_id.0)
+            .map(WarriorId)
+            .find(|&warrior_id| self.is_warrior_alive(warrior_id))
     }
 
     /// Set `game_over` flag and determine if there is a winner.
     fn set_game_over_and_determine_winner(&mut self) {
         self.game_over = true;
 
-        let warrior_ids_alive = (0..self.warriors.len())
+        let warrior_ids_alive = WarriorId::list_all_warrior_ids(self.warriors.len())
             .filter(|&warrior_id| self.is_warrior_alive(warrior_id))
             .collect::<Vec<_>>();
 
@@ -148,12 +150,8 @@ impl CoreWar {
     /// A warrior is alive if he has at least one task to execute.
     pub fn is_warrior_alive(&self, warrior_id: WarriorId) -> bool {
         #[allow(clippy::indexing_slicing, reason = "This index is valid 👌")]
-        let task_queue = &self.mars.task_queues[warrior_id];
+        let task_queue = &self.mars.task_queues[warrior_id.0];
 
         !task_queue.is_empty()
-    }
-
-    fn get_warrior_ids(&self) -> impl Iterator<Item = WarriorId> {
-        0..self.warriors.len()
     }
 }

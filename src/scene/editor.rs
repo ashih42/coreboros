@@ -14,7 +14,7 @@ use crate::{
         editor::{text_editor::TextEditor, warrior_queue::WarriorQueue},
         scene_change::SceneChange,
     },
-    warrior::{Warrior, warrior_id::WarriorIdDisplay as _},
+    warrior::{Warrior, warrior_id::WarriorId},
 };
 
 mod syntax_highlighter;
@@ -417,7 +417,7 @@ impl Editor {
             .inner_margin(8.0)
             .show(ui, |ui| {
                 if let Some(warrior) = self.warrior_queue.get(index) {
-                    let warrior_id = index;
+                    let warrior_id = WarriorId(index);
                     let warrior_name = warrior.metadata.name.as_str();
                     let warrior_color = color::get_egui_color32(Some(warrior_id));
                     let num_instructions = warrior.instructions.len();
