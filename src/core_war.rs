@@ -45,7 +45,7 @@ impl CoreWar {
 
     /// Reset `mars` and game stats for a new game.
     pub fn reset(&mut self, incrementing_game_counter: bool) {
-        self.mars.reset(&self.warriors, &self.config);
+        self.mars.reset(&self.warriors);
 
         #[allow(clippy::arithmetic_side_effects, reason = "`game_counter` is small.")]
         if incrementing_game_counter {

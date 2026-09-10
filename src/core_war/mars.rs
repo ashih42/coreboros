@@ -1,17 +1,20 @@
 use crate::{
     core_war::{
         address::Address,
-        config::{Config, warrior_separation_strategy::WarriorSeparationStrategy},
-        mars::{core::Core, task_outcome::TaskOutcome, task_queue::TaskQueue},
+        config::Config,
+        mars::{
+            core::Core, core_placement_planner::CorePlacementPlanner, task_outcome::TaskOutcome,
+            task_queue::TaskQueue,
+        },
     },
     instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
-    rng,
     warrior::{Warrior, warrior_id::WarriorId},
 };
 
 mod cell_slot_author;
 mod core;
 mod core_cell;
+mod core_placement_planner;
 mod math_executor;
 mod opcode_executor;
 mod task_outcome;
@@ -21,6 +24,7 @@ mod task_queue;
 pub struct Mars {
     pub core: Core,
     pub task_queues: Box<[TaskQueue]>,
+    core_placement_planner: CorePlacementPlanner,
 }
 
 impl Mars {
@@ -34,9 +38,15 @@ impl Mars {
                 .collect::<Vec<_>>()
                 .into_boxed_slice();
 
-        let mut mars = Self { core, task_queues };
+        let core_loader = CorePlacementPlanner::new(config);
 
-        mars.load_warriors_to_core_and_initialize_task_queues(warriors, config);
+        let mut mars = Self {
+            core,
+            task_queues,
+            core_placement_planner: core_loader,
+        };
+
+        mars.load_warriors_to_core_and_initialize_task_queues(warriors);
         mars
     }
 
@@ -48,13 +58,11 @@ impl Mars {
     /// Load each warrior's instructions to core and initialize each warrior's task queue with the first task.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn load_warriors_to_core_and_initialize_task_queues(
-        &mut self,
-        warriors: &[Warrior],
-        config: &Config,
-    ) {
+    fn load_warriors_to_core_and_initialize_task_queues(&mut self, warriors: &[Warrior]) {
         let core_size = self.core.get_size();
-        let starting_positions = self.determine_starting_positions(warriors, config);
+        let starting_positions = self
+            .core_placement_planner
+            .determine_starting_addresses(&self.core, warriors);
 
         for (warrior_id, warrior) in warriors.iter().enumerate() {
             let starting_position = starting_positions[warrior_id];
@@ -73,88 +81,15 @@ impl Mars {
         }
     }
 
-    fn determine_starting_positions(&self, warriors: &[Warrior], config: &Config) -> Vec<usize> {
-        match config.warrior_separation_strategy {
-            WarriorSeparationStrategy::Equal => self.determine_starting_positions_equal(),
-            WarriorSeparationStrategy::Random => {
-                self.determine_starting_positions_random(warriors, config)
-            }
-        }
-    }
-
-    /// Determine the starting positions under the `Equal` warrior separation strategy.
-    fn determine_starting_positions_equal(&self) -> Vec<usize> {
-        let core_size = self.core.get_size();
-
-        #[allow(clippy::arithmetic_side_effects, reason = "These numbers are small.")]
-        (0..self.get_num_warriors())
-            .map(|warrior_id| core_size / self.get_num_warriors() * warrior_id)
-            .collect()
-    }
-
-    /// Determine the starting positions under the `Random` warrior separation strategy.
-    /// Note: This additionally shuffles the position order at the end, for even more randomization.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn determine_starting_positions_random(
-        &self,
-        warriors: &[Warrior],
-        config: &Config,
-    ) -> Vec<usize> {
-        let core_size = self.core.get_size();
-
-        let instruction_lengths = warriors
-            .iter()
-            .map(|warrior| warrior.instructions.len())
-            .collect::<Vec<_>>();
-
-        let separation_buckets = {
-            let total_instructions = warriors
-                .iter()
-                .map(|warrior| warrior.instructions.len())
-                .sum::<usize>();
-
-            let mut buckets = vec![config.min_distance_between_warriors; self.get_num_warriors()];
-
-            #[allow(
-                clippy::suspicious_operation_groupings,
-                reason = "This is correct and intended."
-            )]
-            let mut remaining_cells = core_size
-                - total_instructions
-                - (config.min_distance_between_warriors * self.get_num_warriors());
-
-            while remaining_cells != 0 {
-                let bucket_id = rng::rand_range(0, self.get_num_warriors());
-                buckets[bucket_id] += 1;
-                remaining_cells -= 1;
-            }
-
-            buckets
-        };
-
-        let mut positions = Vec::with_capacity(self.get_num_warriors());
-        let mut position = 0;
-
-        for (instructions, separation) in instruction_lengths.iter().zip(separation_buckets.iter())
-        {
-            positions.push(position);
-            position += instructions + separation;
-        }
-
-        rng::shuffle(&mut positions);
-        positions
-    }
-
     /// Reset the core and task queues, and load warriors' instructions to core for a new game.
-    pub fn reset(&mut self, warriors: &[Warrior], config: &Config) {
+    pub fn reset(&mut self, warriors: &[Warrior]) {
         self.core.reset();
 
         for task_queue in &mut self.task_queues {
             task_queue.clear();
         }
 
-        self.load_warriors_to_core_and_initialize_task_queues(warriors, config);
+        self.load_warriors_to_core_and_initialize_task_queues(warriors);
     }
 
     /// Execute one instruction.
