@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::mars::address::Address;
+use crate::core_war::address::Address;
 
 /// `TaskQueue` is a FIFO queue for "tasks", which are simply addresses in the core.
 #[derive(Debug)]

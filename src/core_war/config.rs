@@ -1,4 +1,4 @@
-use crate::mars::config::{
+use crate::core_war::config::{
     core_dimension::CoreDimension, core_initialization_strategy::CoreInitializationStrategy,
     warrior_separation_strategy::WarriorSeparationStrategy,
 };

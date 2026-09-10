@@ -1,8 +1,11 @@
 use crate::{
-    core_war::score_keeper::ScoreKeeper,
-    mars::{Mars, config::Config},
+    core_war::{config::Config, mars::Mars, score_keeper::ScoreKeeper},
     warrior::{Warrior, warrior_id::WarriorId},
 };
+
+pub mod address;
+pub mod config;
+pub mod mars;
 
 mod score_keeper;
 

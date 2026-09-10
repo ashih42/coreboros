@@ -1,11 +1,10 @@
 use crate::{
-    instruction::{Instruction, addressing_mode::AddressingMode, operand::Operand},
-    mars::{
+    core_war::{
         address::Address,
         config::{Config, core_initialization_strategy::CoreInitializationStrategy},
-        core_cell::CoreCell,
-        math_executor::MathExecutor,
+        mars::{core_cell::CoreCell, math_executor::MathExecutor},
     },
+    instruction::{Instruction, addressing_mode::AddressingMode, operand::Operand},
     warrior::warrior_id::WarriorId,
 };
 

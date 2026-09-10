@@ -4,11 +4,12 @@
 //! Thus, these functions treat all 6 variants of indirect addressing modes in the same way, simply as indirect.
 
 use crate::{
+    core_war::{
+        address::Address,
+        mars::{core::Core, math_executor::ArithmeticOperation, task_outcome::TaskOutcome},
+    },
     instruction::{
         Instruction, addressing_mode::AddressingMode, modifier::Modifier, operand::Operand,
-    },
-    mars::{
-        address::Address, core::Core, math_executor::ArithmeticOperation, task_outcome::TaskOutcome,
     },
     warrior::warrior_id::WarriorId,
 };

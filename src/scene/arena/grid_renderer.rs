@@ -1,9 +1,9 @@
 use macroquad::prelude::*;
 
 use crate::{
+    core_war::{address::Address, config::core_dimension::CoreDimension, mars::Mars},
     game_context::renderer::color,
     instruction::opcode::Opcode,
-    mars::{Mars, address::Address, config::core_dimension::CoreDimension},
     scene::arena::rendering_utils,
     warrior::warrior_id::WarriorId,
 };

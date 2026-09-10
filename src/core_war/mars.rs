@@ -1,18 +1,13 @@
 use crate::{
-    instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
-    mars::{
+    core_war::{
         address::Address,
         config::{Config, warrior_separation_strategy::WarriorSeparationStrategy},
-        core::Core,
-        task_outcome::TaskOutcome,
-        task_queue::TaskQueue,
+        mars::{core::Core, task_outcome::TaskOutcome, task_queue::TaskQueue},
     },
+    instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
     rng,
     warrior::{Warrior, warrior_id::WarriorId},
 };
-
-pub mod address;
-pub mod config;
 
 mod cell_slot_author;
 mod core;

@@ -1,5 +1,5 @@
 use crate::{
-    mars::config::{
+    core_war::config::{
         Config, core_dimension::CoreDimension,
         core_initialization_strategy::CoreInitializationStrategy,
         warrior_separation_strategy::WarriorSeparationStrategy,

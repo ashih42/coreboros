@@ -2,13 +2,12 @@ use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
-    core_war::CoreWar,
+    core_war::{CoreWar, address::Address, config::Config},
     game_context::{
         GameContext,
         renderer::{Renderer, color},
     },
     instruction::{operand::Operand, operation::Operation},
-    mars::{address::Address, config::Config},
     scene::{
         Scene,
         arena::{

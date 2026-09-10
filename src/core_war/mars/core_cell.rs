@@ -1,5 +1,5 @@
 use crate::{
-    instruction::Instruction, mars::cell_slot_author::CellSlotAuthor,
+    core_war::mars::cell_slot_author::CellSlotAuthor, instruction::Instruction,
     warrior::warrior_id::WarriorId,
 };
 

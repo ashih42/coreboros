@@ -2,13 +2,13 @@ use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
+    core_war::config::warrior_separation_strategy::WarriorSeparationStrategy,
     game_context::{
         GameContext,
         config_manager::ConfigManager,
         renderer::{Renderer, color},
         warrior_vault::WarriorVault,
     },
-    mars::config::warrior_separation_strategy::WarriorSeparationStrategy,
     scene::{
         Scene,
         editor::{text_editor::TextEditor, warrior_queue::WarriorQueue},
