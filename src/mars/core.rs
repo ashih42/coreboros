@@ -11,33 +11,32 @@ use crate::{
 
 /// `Core` is the circular shared memory space occupied by all warriors' instructions.
 pub struct Core {
-    cells: Vec<CoreCell>,
-    size: usize,
+    cells: Box<[CoreCell]>,
     initialization_strategy: CoreInitializationStrategy,
     pub math_executor: MathExecutor,
 }
 
 impl Core {
     pub fn new(config: &Config) -> Self {
-        let size = config.core_dimension.as_size();
+        let core_size = config.core_dimension.as_size();
         let initialization_strategy = config.core_initialization_strategy;
 
         let cells = match initialization_strategy {
             CoreInitializationStrategy::FillDat00 | CoreInitializationStrategy::Leftover => {
-                vec![CoreCell::default(); size]
+                vec![CoreCell::default(); core_size]
             }
             CoreInitializationStrategy::Random => std::iter::repeat_with(|| {
-                CoreCell::new(Instruction::random_instruction_wrapped(size), None)
+                CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
             })
-            .take(size)
+            .take(core_size)
             .collect(),
-        };
+        }
+        .into_boxed_slice();
 
         Self {
             cells,
-            size,
             initialization_strategy,
-            math_executor: MathExecutor::new(size),
+            math_executor: MathExecutor::new(core_size),
         }
     }
 
@@ -52,11 +51,17 @@ impl Core {
                 }
             }
             CoreInitializationStrategy::Random => {
+                let core_size = self.get_size();
                 self.cells.fill_with(|| {
-                    CoreCell::new(Instruction::random_instruction_wrapped(self.size), None)
+                    CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
                 });
             }
         }
+    }
+
+    #[inline]
+    pub const fn get_size(&self) -> usize {
+        self.cells.len()
     }
 
     /// Note: This function requires `address` to be valid.
@@ -130,7 +135,7 @@ impl Core {
     )]
     pub const fn resolve_address(&self, address: Address, offset: i32) -> Address {
         let destination = (address as i32) + offset;
-        destination.rem_euclid(self.size as i32) as Address
+        destination.rem_euclid(self.get_size() as i32) as Address
     }
 
     /// Determine the address specified in the `operand`.

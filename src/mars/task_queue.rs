@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use crate::mars::address::Address;
 
 /// `TaskQueue` is a FIFO queue for "tasks", which are simply addresses in the core.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TaskQueue {
     tasks: VecDeque<Address>,
 }

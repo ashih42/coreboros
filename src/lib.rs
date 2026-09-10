@@ -8,6 +8,7 @@ pub mod rng;
 pub mod scene;
 pub mod warrior;
 
+mod core_war;
 mod game_context;
 mod instruction;
 mod mars;

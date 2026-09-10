@@ -53,10 +53,10 @@ impl RingRenderer {
         }
     }
 
-    pub fn render(&self, mars: &Mars, selected_address: Address) {
+    pub fn render(&self, mars: &Mars, current_warrior_id: WarriorId, selected_address: Address) {
         self.draw_core(mars);
         self.highlight_selected_cell(selected_address);
-        self.draw_tasks(mars);
+        self.draw_tasks(mars, current_warrior_id);
     }
 
     /// Draw all cores with colors indicating instruction author at each cell.
@@ -241,25 +241,22 @@ impl RingRenderer {
     }
 
     /// Draw all warriors' tasks, and then draw the current warrior's current task.
-    fn draw_tasks(&self, mars: &Mars) {
+    fn draw_tasks(&self, mars: &Mars, current_warrior_id: WarriorId) {
         // Draw all warrior's tasks.
         for warrior_id in rendering_utils::generate_warrior_rendering_order(
-            mars.warrior_contexts.len(),
-            mars.current_warrior_id,
+            mars.get_num_warriors(),
+            current_warrior_id,
         ) {
             #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-            for &address in mars.warrior_contexts[warrior_id].task_queue.iter() {
+            for &address in mars.task_queues[warrior_id].iter() {
                 self.draw_task(address, warrior_id, false);
             }
         }
 
         // Draw current warrior's current task.
         #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-        if let Some(address) = mars.warrior_contexts[mars.current_warrior_id]
-            .task_queue
-            .peek()
-        {
-            self.draw_task(address, mars.current_warrior_id, true);
+        if let Some(address) = mars.task_queues[current_warrior_id].peek() {
+            self.draw_task(address, current_warrior_id, true);
         }
     }
 

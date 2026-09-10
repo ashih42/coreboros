@@ -6,7 +6,6 @@ use crate::{
         core::Core,
         task_outcome::TaskOutcome,
         task_queue::TaskQueue,
-        warrior_context::WarriorContext,
     },
     rng,
     warrior::{Warrior, warrior_id::WarriorId},
@@ -22,64 +21,51 @@ mod math_executor;
 mod opcode_executor;
 mod task_outcome;
 mod task_queue;
-mod warrior_context;
 
 /// `Mars` ("Memory Array Redcode Simulator") is the virtual machine that executes Redcode instructions.
 pub struct Mars {
-    pub config: Config,
     pub core: Core,
-    pub warrior_contexts: Vec<WarriorContext>,
-    pub game_counter: usize,
-    pub turn_counter: usize,
-    pub cycle_counter: usize,
-    pub current_warrior_id: WarriorId,
-    pub game_over: bool,
-    pub winner: Option<WarriorId>,
+    pub task_queues: Box<[TaskQueue]>,
 }
 
 impl Mars {
     /// Precondition: `ConfigManager` has already validated these `warriors` can fit on the core with the given `config`.
-    pub fn new(warriors: Box<[Warrior]>, config: Config) -> Self {
-        let core = Core::new(&config);
+    pub fn new(warriors: &[Warrior], config: &Config) -> Self {
+        let core = Core::new(config);
 
-        let warrior_contexts = warriors
-            .into_iter()
-            .map(|warrior| {
-                WarriorContext::new(
-                    warrior,
-                    TaskQueue::with_capacity(config.task_queue_capacity),
-                )
-            })
-            .collect();
+        let task_queues =
+            std::iter::repeat_with(|| TaskQueue::with_capacity(config.task_queue_capacity))
+                .take(warriors.len())
+                .collect::<Vec<_>>()
+                .into_boxed_slice();
 
-        let mut mars = Self {
-            config,
-            warrior_contexts,
-            core,
-            game_counter: 0,
-            turn_counter: 0,
-            cycle_counter: 0,
-            current_warrior_id: 0,
-            game_over: false,
-            winner: None,
-        };
+        let mut mars = Self { core, task_queues };
 
-        mars.load_warriors_to_core_and_initialize_task_queues();
+        mars.load_warriors_to_core_and_initialize_task_queues(warriors, config);
         mars
+    }
+
+    #[inline]
+    pub const fn get_num_warriors(&self) -> usize {
+        self.task_queues.len()
     }
 
     /// Load each warrior's instructions to core and initialize each warrior's task queue with the first task.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn load_warriors_to_core_and_initialize_task_queues(&mut self) {
-        let core_size = self.config.core_dimension.as_size();
-        let starting_positions = self.determine_starting_positions();
+    fn load_warriors_to_core_and_initialize_task_queues(
+        &mut self,
+        warriors: &[Warrior],
+        config: &Config,
+    ) {
+        let core_size = self.core.get_size();
+        let starting_positions = self.determine_starting_positions(warriors, config);
 
-        for (warrior_id, context) in self.warrior_contexts.iter_mut().enumerate() {
+        for (warrior_id, warrior) in warriors.iter().enumerate() {
             let starting_position = starting_positions[warrior_id];
 
             // Copy instructions to core.
-            for (i, instruction) in context.warrior.instructions.iter().enumerate() {
+            for (i, instruction) in warrior.instructions.iter().enumerate() {
                 let position = (starting_position + i) % core_size;
 
                 self.core
@@ -87,26 +73,27 @@ impl Mars {
             }
 
             // Push initial task.
-            let task = (starting_position + context.warrior.origin) % core_size;
-            context.task_queue.push_if_not_full(task);
+            let task = (starting_position + warrior.origin) % core_size;
+            self.task_queues[warrior_id].push_if_not_full(task);
         }
     }
 
-    fn determine_starting_positions(&self) -> Vec<usize> {
-        match self.config.warrior_separation_strategy {
+    fn determine_starting_positions(&self, warriors: &[Warrior], config: &Config) -> Vec<usize> {
+        match config.warrior_separation_strategy {
             WarriorSeparationStrategy::Equal => self.determine_starting_positions_equal(),
-            WarriorSeparationStrategy::Random => self.determine_starting_positions_random(),
+            WarriorSeparationStrategy::Random => {
+                self.determine_starting_positions_random(warriors, config)
+            }
         }
     }
 
     /// Determine the starting positions under the `Equal` warrior separation strategy.
     fn determine_starting_positions_equal(&self) -> Vec<usize> {
-        let core_size = self.config.core_dimension.as_size();
-        let num_warriors = self.warrior_contexts.len();
+        let core_size = self.core.get_size();
 
         #[allow(clippy::arithmetic_side_effects, reason = "These numbers are small.")]
-        (0..num_warriors)
-            .map(|warrior_id| core_size / num_warriors * warrior_id)
+        (0..self.get_num_warriors())
+            .map(|warrior_id| core_size / self.get_num_warriors() * warrior_id)
             .collect()
     }
 
@@ -114,30 +101,36 @@ impl Mars {
     /// Note: This additionally shuffles the position order at the end, for even more randomization.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn determine_starting_positions_random(&self) -> Vec<usize> {
-        let core_size = self.config.core_dimension.as_size();
-        let num_warriors = self.warrior_contexts.len();
+    fn determine_starting_positions_random(
+        &self,
+        warriors: &[Warrior],
+        config: &Config,
+    ) -> Vec<usize> {
+        let core_size = self.core.get_size();
 
-        let instruction_lengths = self
-            .warrior_contexts
+        let instruction_lengths = warriors
             .iter()
-            .map(|context| context.warrior.instructions.len())
+            .map(|warrior| warrior.instructions.len())
             .collect::<Vec<_>>();
 
         let separation_buckets = {
-            let total_instructions = self
-                .warrior_contexts
+            let total_instructions = warriors
                 .iter()
-                .map(|context| context.warrior.instructions.len())
+                .map(|warrior| warrior.instructions.len())
                 .sum::<usize>();
 
-            let mut buckets = vec![self.config.min_distance_between_warriors; num_warriors];
+            let mut buckets = vec![config.min_distance_between_warriors; self.get_num_warriors()];
+
+            #[allow(
+                clippy::suspicious_operation_groupings,
+                reason = "This is correct and intended."
+            )]
             let mut remaining_cells = core_size
                 - total_instructions
-                - (self.config.min_distance_between_warriors * num_warriors);
+                - (config.min_distance_between_warriors * self.get_num_warriors());
 
             while remaining_cells != 0 {
-                let bucket_id = rng::rand_range(0, num_warriors);
+                let bucket_id = rng::rand_range(0, self.get_num_warriors());
                 buckets[bucket_id] += 1;
                 remaining_cells -= 1;
             }
@@ -145,7 +138,7 @@ impl Mars {
             buckets
         };
 
-        let mut positions = Vec::with_capacity(num_warriors);
+        let mut positions = Vec::with_capacity(self.get_num_warriors());
         let mut position = 0;
 
         for (instructions, separation) in instruction_lengths.iter().zip(separation_buckets.iter())
@@ -158,118 +151,26 @@ impl Mars {
         positions
     }
 
-    /// Reset the entire state (except `game_counter`) for a new game.
-    pub fn reset(&mut self, loading_next_game: bool) {
+    /// Reset the core and task queues, and load warriors' instructions to core for a new game.
+    pub fn reset(&mut self, warriors: &[Warrior], config: &Config) {
         self.core.reset();
 
-        for context in &mut self.warrior_contexts {
-            context.task_queue.clear();
-        }
-        self.load_warriors_to_core_and_initialize_task_queues();
-
-        #[allow(clippy::arithmetic_side_effects, reason = "`game_counter` is small.")]
-        if loading_next_game {
-            self.game_counter += 1;
+        for task_queue in &mut self.task_queues {
+            task_queue.clear();
         }
 
-        self.turn_counter = 0;
-        self.cycle_counter = 0;
-        self.current_warrior_id = 0;
-        self.game_over = false;
-        self.winner = None;
+        self.load_warriors_to_core_and_initialize_task_queues(warriors, config);
     }
 
     /// Execute one instruction.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
-    pub fn step(&mut self) {
-        if self.game_over {
-            return;
-        }
-
+    pub fn step(&mut self, current_warrior_id: WarriorId) {
         Self::execute_task(
-            self.current_warrior_id,
-            &mut self.warrior_contexts[self.current_warrior_id].task_queue,
+            current_warrior_id,
+            &mut self.task_queues[current_warrior_id],
             &mut self.core,
         );
-
-        self.cycle_counter += 1;
-
-        if self.check_is_game_over() {
-            self.set_game_over_and_determine_winner();
-            return;
-        }
-
-        if let Some(warrior_id) = self.find_next_warrior_alive() {
-            self.current_warrior_id = warrior_id;
-        }
-    }
-
-    /// Find the next warrior still alive to execute his instruction next.
-    ///
-    /// Example: In a 4-player game with warriors [0, 1, 2, 3], if `current_warrior_id` is 1,
-    /// then we would try to find the next warrior alive at [2, 3], then advance turn counter, then try to find next warrior alive at [0, 1].
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn find_next_warrior_alive(&mut self) -> Option<WarriorId> {
-        // Check first pass - from next player to last player.
-        if let Some(warrior_id) = (self.current_warrior_id + 1..self.warrior_contexts.len())
-            .find(|&warrior_id| self.warrior_contexts[warrior_id].is_alive())
-        {
-            return Some(warrior_id);
-        }
-
-        // Advance the turn counter, and check if this ends the game.
-        self.turn_counter += 1;
-        if self.turn_counter >= self.config.turn_limit {
-            self.set_game_over_and_determine_winner();
-            return None;
-        }
-
-        // Check second pass - from first player to current player.
-        (0..=self.current_warrior_id)
-            .find(|&warrior_id| self.warrior_contexts[warrior_id].is_alive())
-    }
-
-    /// Set `game_over` flag and determine if there is a winner.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn set_game_over_and_determine_winner(&mut self) {
-        self.game_over = true;
-
-        let warrior_ids_alive = (0..self.warrior_contexts.len())
-            .filter(|&warrior_id| self.warrior_contexts[warrior_id].is_alive())
-            .collect::<Vec<_>>();
-
-        if warrior_ids_alive.len() == 1
-            && let Some(&winner_id) = warrior_ids_alive.first()
-        {
-            self.winner = Some(winner_id);
-            self.warrior_contexts[winner_id].num_wins += 1;
-        }
-    }
-
-    /// Check if it is game over from:
-    /// - reaching the final turn.
-    /// - observing enough warriors have died.
-    fn check_is_game_over(&self) -> bool {
-        // The game ends when `turn_counter` reaches maximum value.
-        if self.turn_counter >= self.config.turn_limit {
-            return true;
-        }
-
-        let num_warriors_alive = self
-            .warrior_contexts
-            .iter()
-            .filter(|warrior| warrior.is_alive())
-            .count();
-
-        match self.warrior_contexts.len() {
-            // In single-player mode, the game ends all players are dead.
-            1 => num_warriors_alive == 0,
-            // In multi-player mode, the game ends when only 1 players remain alive, or when all players are dead.
-            _ => num_warriors_alive <= 1,
-        }
     }
 
     /// Pop off one task, execute it, and push resulting new task(s) back to the queue.
