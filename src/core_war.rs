@@ -37,7 +37,7 @@ impl CoreWar {
             game_counter: 0,
             turn_counter: 0,
             cycle_counter: 0,
-            current_warrior_id: WarriorId(0),
+            current_warrior_id: WarriorId::new(0),
             game_over: false,
             winner: None,
         }
@@ -54,9 +54,17 @@ impl CoreWar {
 
         self.turn_counter = 0;
         self.cycle_counter = 0;
-        self.current_warrior_id = WarriorId(0);
+        self.current_warrior_id = WarriorId::new(0);
         self.game_over = false;
         self.winner = None;
+    }
+
+    /// Get the `Warrior` corresponding to `warrior_id`.
+    pub fn get_warrior(&self, warrior_id: WarriorId) -> &Warrior {
+        let index = warrior_id.as_index();
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        &self.warriors[index]
     }
 
     /// Execute one instruction.
@@ -106,12 +114,11 @@ impl CoreWar {
     ///
     /// Example: In a 4-player game with warriors [0, 1, 2, 3], if `current_warrior_id` is 1,
     /// then we would try to find the next warrior alive at [2, 3], then advance turn counter, then try to find next warrior alive at [0, 1].
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
+    #[allow(clippy::arithmetic_side_effects, reason = "These operations are safe.")]
     fn find_next_warrior_alive(&mut self) -> Option<WarriorId> {
         // Check first pass - from next player to last player.
-        if let Some(warrior_id) = ((self.current_warrior_id.0 + 1)..self.warriors.len())
-            .map(WarriorId)
+        if let Some(warrior_id) = ((self.current_warrior_id.as_index() + 1)..self.warriors.len())
+            .map(WarriorId::new)
             .find(|&warrior_id| self.is_warrior_alive(warrior_id))
         {
             return Some(warrior_id);
@@ -125,8 +132,8 @@ impl CoreWar {
         }
 
         // Check second pass - from first player to current player.
-        (0..=self.current_warrior_id.0)
-            .map(WarriorId)
+        (0..=self.current_warrior_id.as_index())
+            .map(WarriorId::new)
             .find(|&warrior_id| self.is_warrior_alive(warrior_id))
     }
 
@@ -149,8 +156,7 @@ impl CoreWar {
     /// Check if a specific warrior is still alive.
     /// A warrior is alive if he has at least one task to execute.
     pub fn is_warrior_alive(&self, warrior_id: WarriorId) -> bool {
-        #[allow(clippy::indexing_slicing, reason = "This index is valid 👌")]
-        let task_queue = &self.mars.task_queues[warrior_id.0];
+        let task_queue = self.mars.get_task_queue(warrior_id);
 
         !task_queue.is_empty()
     }

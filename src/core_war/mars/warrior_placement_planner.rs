@@ -51,8 +51,6 @@ impl WarriorPlacementPlanner {
     /// Determine placements under the `Random` warrior separation strategy.
     /// Note: This also randomizes the warrior order, so the result might look like
     /// [40, 0], i.e. to load warrior 0 at address 40, and warrior 1 at address 0.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn determine_placements_random(&self, core: &Core, warriors: &[Warrior]) -> Box<[usize]> {
         let num_warriors = warriors.len();
 
@@ -68,14 +66,20 @@ impl WarriorPlacementPlanner {
         let mut placements = Vec::with_capacity(num_warriors);
         let mut address = 0;
 
-        for (&warrior_id, &separator) in warrior_ids_in_spawning_order.iter().zip(separators.iter())
+        for ((&warrior_id, separator), instruction_length) in warrior_ids_in_spawning_order
+            .iter()
+            .zip(separators.iter())
+            .zip(instruction_lengths.iter())
         {
-            // assignments.push(WarriorToAddressAssignment::new(warrior_id, address));
             placements.push(Placement {
                 warrior_id,
                 address,
             });
-            address += instruction_lengths[warrior_id.0] + separator;
+
+            #[allow(clippy::arithmetic_side_effects, reason = "These operations are safe.")]
+            {
+                address += instruction_length + separator;
+            }
         }
 
         placements.sort_by_key(|assignment| assignment.warrior_id);

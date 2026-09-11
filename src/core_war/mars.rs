@@ -23,7 +23,7 @@ mod warrior_placement_planner;
 /// `Mars` ("Memory Array Redcode Simulator") is the virtual machine that executes Redcode instructions.
 pub struct Mars {
     pub core: Core,
-    pub task_queues: Box<[TaskQueue]>,
+    task_queues: Box<[TaskQueue]>,
     warrior_placement_planner: WarriorPlacementPlanner,
 }
 
@@ -93,6 +93,22 @@ impl Mars {
         }
     }
 
+    /// Get the `TaskQueue` corresponding to `warrior_id`.
+    pub fn get_task_queue(&self, warrior_id: WarriorId) -> &TaskQueue {
+        let index = warrior_id.as_index();
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        &self.task_queues[index]
+    }
+
+    /// Get the mutable `TaskQueue` corresponding to `warrior_id`.
+    pub fn get_task_queue_mut(&mut self, warrior_id: WarriorId) -> &mut TaskQueue {
+        let index = warrior_id.as_index();
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        &mut self.task_queues[index]
+    }
+
     /// Spawn the initial task for a specific warrior.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(
@@ -106,7 +122,8 @@ impl Mars {
         starting_position: usize,
     ) {
         let task = (starting_position + warrior.origin) % self.core.get_size();
-        self.task_queues[warrior_id.0].push_if_not_full(task);
+
+        self.get_task_queue_mut(warrior_id).push_if_not_full(task);
     }
 
     /// Reset the core and task queues, and load warriors' instructions to core for a new game.
@@ -126,7 +143,8 @@ impl Mars {
     pub fn step(&mut self, current_warrior_id: WarriorId) {
         Self::execute_task(
             current_warrior_id,
-            &mut self.task_queues[current_warrior_id.0],
+            &mut self.task_queues[current_warrior_id.as_index()],
+            // self.get_task_queue_mut(current_warrior_id), // TODO: WHY THIS NO WORK?
             &mut self.core,
         );
     }

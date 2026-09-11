@@ -417,7 +417,7 @@ impl Editor {
             .inner_margin(8.0)
             .show(ui, |ui| {
                 if let Some(warrior) = self.warrior_queue.get(index) {
-                    let warrior_id = WarriorId(index);
+                    let warrior_id = WarriorId::new(index);
                     let warrior_name = warrior.metadata.name.as_str();
                     let warrior_color = color::get_egui_color32(Some(warrior_id));
                     let num_instructions = warrior.instructions.len();
@@ -436,7 +436,7 @@ impl Editor {
                         ui.colored_label(egui::Color32::WHITE, "Warrior");
                         ui.colored_label(
                             egui::Color32::WHITE,
-                            renderer.usize_to_str(warrior_id.as_display_id()),
+                            renderer.usize_to_str(warrior_id.as_display_number()),
                         );
                     });
 

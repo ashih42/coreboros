@@ -11,8 +11,8 @@ pub fn generate_warrior_rendering_order(
 ) -> impl DoubleEndedIterator<Item = WarriorId> {
     #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
     (0..num_warriors).map(move |i| {
-        let index = (current_warrior_id.0 + i + 1) % num_warriors;
-        WarriorId(index)
+        let index = (current_warrior_id.as_index() + i + 1) % num_warriors;
+        WarriorId::new(index)
     })
 }
 
@@ -22,14 +22,16 @@ mod tests {
 
     #[test]
     fn test_generate_warrior_rendering_order() {
-        assert!(generate_warrior_rendering_order(4, WarriorId(0)).eq([1, 2, 3, 0].map(WarriorId)));
-        assert!(generate_warrior_rendering_order(4, WarriorId(1)).eq([2, 3, 0, 1].map(WarriorId)));
-        assert!(generate_warrior_rendering_order(4, WarriorId(2)).eq([3, 0, 1, 2].map(WarriorId)));
-        assert!(generate_warrior_rendering_order(4, WarriorId(3)).eq([0, 1, 2, 3].map(WarriorId)));
+        use generate_warrior_rendering_order as generate_order;
 
-        assert!(generate_warrior_rendering_order(2, WarriorId(0)).eq([1, 0].map(WarriorId)));
-        assert!(generate_warrior_rendering_order(2, WarriorId(1)).eq([0, 1].map(WarriorId)));
+        assert!(generate_order(4, WarriorId::new(0)).eq([1, 2, 3, 0].map(WarriorId::new)));
+        assert!(generate_order(4, WarriorId::new(1)).eq([2, 3, 0, 1].map(WarriorId::new)));
+        assert!(generate_order(4, WarriorId::new(2)).eq([3, 0, 1, 2].map(WarriorId::new)));
+        assert!(generate_order(4, WarriorId::new(3)).eq([0, 1, 2, 3].map(WarriorId::new)));
 
-        assert!(generate_warrior_rendering_order(1, WarriorId(0)).eq([0].map(WarriorId)));
+        assert!(generate_order(2, WarriorId::new(0)).eq([1, 0].map(WarriorId::new)));
+        assert!(generate_order(2, WarriorId::new(1)).eq([0, 1].map(WarriorId::new)));
+
+        assert!(generate_order(1, WarriorId::new(0)).eq([0].map(WarriorId::new)));
     }
 }

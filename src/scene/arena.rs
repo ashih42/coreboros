@@ -229,8 +229,10 @@ impl Arena {
 
     /// Select the address where the current warrior's current task is located.
     fn zoom_to_current_warrior_task(&mut self) {
-        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-        let task_queue = &self.core_war.mars.task_queues[self.core_war.current_warrior_id.0];
+        let task_queue = self
+            .core_war
+            .mars
+            .get_task_queue(self.core_war.current_warrior_id);
 
         if let Some(address) = task_queue.peek() {
             self.set_selected_address(address);
@@ -444,7 +446,7 @@ impl Arena {
 
             if let Some(winner_id) = self.core_war.winner {
                 let color = color::get_egui_color32(Some(winner_id));
-                let winner_id_str = renderer.usize_to_str(winner_id.as_display_id());
+                let winner_id_str = renderer.usize_to_str(winner_id.as_display_number());
 
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("Winner:").size(WINNER_FONT_SIZE));
@@ -462,11 +464,9 @@ impl Arena {
 
     /// Draw a frame to show a warrior's details.
     fn draw_warrior_info(&self, warrior_id: WarriorId, ui: &mut egui::Ui, renderer: &Renderer) {
-        #[allow(clippy::indexing_slicing, reason = "This index is valid 👌")]
-        let warrior_name = &self.core_war.warriors[warrior_id.0].metadata.name;
+        let warrior_name = &self.core_war.get_warrior(warrior_id).metadata.name;
 
-        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
-        let task_queue = &self.core_war.mars.task_queues[warrior_id.0];
+        let task_queue = &self.core_war.mars.get_task_queue(warrior_id);
         let tasks_str = renderer.usize_to_str(task_queue.len());
         let task_capacity_str = renderer.usize_to_str(task_queue.get_capacity());
 
@@ -530,7 +530,7 @@ impl Arena {
                             ui.colored_label(egui::Color32::WHITE, "Warrior");
                             ui.colored_label(
                                 egui::Color32::WHITE,
-                                renderer.usize_to_str(warrior_id.as_display_id()),
+                                renderer.usize_to_str(warrior_id.as_display_number()),
                             );
                         });
 
@@ -863,9 +863,11 @@ impl Arena {
         const ICON_WIDTH: f32 = 20.0;
 
         // Draw a TINTED warrior icon at this address, if the current warrior's current task is at this address.
-        #[allow(clippy::indexing_slicing, reason = "This index is valid 👌")]
-        if let Some(task) =
-            self.core_war.mars.task_queues[self.core_war.current_warrior_id.0].peek()
+        if let Some(task) = self
+            .core_war
+            .mars
+            .get_task_queue(self.core_war.current_warrior_id)
+            .peek()
             && task == address
         {
             ui.add(
@@ -883,14 +885,17 @@ impl Arena {
         }
 
         // Draw a warrior icon at this address, if a last-to-render warrior has a task at this address.
-        #[allow(clippy::indexing_slicing, reason = "This index is valid 👌")]
         if let Some(warrior_id) = rendering_utils::generate_warrior_rendering_order(
             self.core_war.warriors.len(),
             self.core_war.current_warrior_id,
         )
         .rev()
-        .find(|&warrior_id| self.core_war.mars.task_queues[warrior_id.0].contains(address))
-        {
+        .find(|&warrior_id| {
+            self.core_war
+                .mars
+                .get_task_queue(warrior_id)
+                .contains(address)
+        }) {
             ui.add(
                 egui::Image::new(renderer.texture_manager.get_warrior_icon(warrior_id))
                     .max_width(ICON_WIDTH),

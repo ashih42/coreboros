@@ -11,17 +11,25 @@ impl ScoreKeeper {
         }
     }
 
+    /// Get number of wins for `warrior_id`.
     pub fn get_wins(&self, warrior_id: WarriorId) -> usize {
+        let index = warrior_id.as_index();
+
         #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-        self.num_wins[warrior_id.0]
+        self.num_wins[index]
     }
 
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "The number of wins are small numbers."
-    )]
+    /// Increment number of wins for `warrior_id`.
     pub fn increment_wins(&mut self, warrior_id: WarriorId) {
-        self.num_wins[warrior_id.0] += 1;
+        let index = warrior_id.as_index();
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "The number of wins is a small number."
+        )]
+        {
+            self.num_wins[index] += 1;
+        }
     }
 }
