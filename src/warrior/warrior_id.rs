@@ -1,6 +1,6 @@
 /// `WarriorId` serves as a valid index for containers that hold data for all warriors, and also
 /// it serves as a foreign key to refer to a `Warrior` without using a reference.
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WarriorId(pub usize);
 
 impl WarriorId {

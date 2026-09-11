@@ -22,15 +22,14 @@ impl Core {
 
         let cells = match initialization_strategy {
             CoreInitializationStrategy::FillDat00 | CoreInitializationStrategy::Leftover => {
-                vec![CoreCell::default(); core_size]
+                vec![CoreCell::default(); core_size].into_boxed_slice()
             }
             CoreInitializationStrategy::Random => std::iter::repeat_with(|| {
                 CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
             })
             .take(core_size)
             .collect(),
-        }
-        .into_boxed_slice();
+        };
 
         Self {
             cells,

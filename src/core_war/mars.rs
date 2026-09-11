@@ -3,8 +3,8 @@ use crate::{
         address::Address,
         config::Config,
         mars::{
-            core::Core, core_placement_planner::CorePlacementPlanner, task_outcome::TaskOutcome,
-            task_queue::TaskQueue,
+            core::Core, task_outcome::TaskOutcome, task_queue::TaskQueue,
+            warrior_placement_planner::WarriorPlacementPlanner,
         },
     },
     instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
@@ -14,17 +14,17 @@ use crate::{
 mod cell_slot_author;
 mod core;
 mod core_cell;
-mod core_placement_planner;
 mod math_executor;
 mod opcode_executor;
 mod task_outcome;
 mod task_queue;
+mod warrior_placement_planner;
 
 /// `Mars` ("Memory Array Redcode Simulator") is the virtual machine that executes Redcode instructions.
 pub struct Mars {
     pub core: Core,
     pub task_queues: Box<[TaskQueue]>,
-    core_placement_planner: CorePlacementPlanner,
+    warrior_placement_planner: WarriorPlacementPlanner,
 }
 
 impl Mars {
@@ -35,18 +35,17 @@ impl Mars {
         let task_queues =
             std::iter::repeat_with(|| TaskQueue::with_capacity(config.task_queue_capacity))
                 .take(warriors.len())
-                .collect::<Vec<_>>()
-                .into_boxed_slice();
+                .collect();
 
-        let core_loader = CorePlacementPlanner::new(config);
+        let warrior_placement_planner = WarriorPlacementPlanner::new(config);
 
         let mut mars = Self {
             core,
             task_queues,
-            core_placement_planner: core_loader,
+            warrior_placement_planner,
         };
 
-        mars.load_warriors_to_core_and_initialize_task_queues(warriors);
+        mars.load_warriors(warriors);
         mars
     }
 
@@ -55,31 +54,59 @@ impl Mars {
         self.task_queues.len()
     }
 
-    /// Load each warrior's instructions to core and initialize each warrior's task queue with the first task.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
-    fn load_warriors_to_core_and_initialize_task_queues(&mut self, warriors: &[Warrior]) {
-        let core_size = self.core.get_size();
+    /// Initialize `Mars` with data from these `warriors`:
+    /// - Load warriors' instructions to core.
+    /// - Populate task queues with initial tasks.
+    fn load_warriors(&mut self, warriors: &[Warrior]) {
         let starting_positions = self
-            .core_placement_planner
-            .determine_starting_addresses(&self.core, warriors);
+            .warrior_placement_planner
+            .determine_placements(&self.core, warriors);
 
-        for (id, warrior) in warriors.iter().enumerate() {
-            let warrior_id = WarriorId(id);
-            let starting_position = starting_positions[warrior_id.0];
-
-            // Copy instructions to core.
-            for (i, instruction) in warrior.instructions.iter().enumerate() {
-                let position = (starting_position + i) % core_size;
-
-                self.core
-                    .wrap_and_load_instruction(position, instruction, Some(warrior_id));
-            }
-
-            // Push initial task.
-            let task = (starting_position + warrior.origin) % core_size;
-            self.task_queues[warrior_id.0].push_if_not_full(task);
+        for ((warrior_id, warrior), starting_position) in
+            WarriorId::list_all_warrior_ids(warriors.len())
+                .zip(warriors)
+                .zip(starting_positions)
+        {
+            self.load_instructions_to_core(warrior_id, warrior, starting_position);
+            self.spawn_initial_task(warrior_id, warrior, starting_position);
         }
+    }
+
+    /// Load a specific warrior's instructions to the core.
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "These operations are valid."
+    )]
+    fn load_instructions_to_core(
+        &mut self,
+        warrior_id: WarriorId,
+        warrior: &Warrior,
+        starting_position: usize,
+    ) {
+        let core_size = self.core.get_size();
+
+        for (i, instruction) in warrior.instructions.iter().enumerate() {
+            let position = (starting_position + i) % core_size;
+
+            self.core
+                .wrap_and_load_instruction(position, instruction, Some(warrior_id));
+        }
+    }
+
+    /// Spawn the initial task for a specific warrior.
+    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "These operations are valid."
+    )]
+    fn spawn_initial_task(
+        &mut self,
+        warrior_id: WarriorId,
+        warrior: &Warrior,
+        starting_position: usize,
+    ) {
+        let task = (starting_position + warrior.origin) % self.core.get_size();
+        self.task_queues[warrior_id.0].push_if_not_full(task);
     }
 
     /// Reset the core and task queues, and load warriors' instructions to core for a new game.
@@ -90,7 +117,7 @@ impl Mars {
             task_queue.clear();
         }
 
-        self.load_warriors_to_core_and_initialize_task_queues(warriors);
+        self.load_warriors(warriors);
     }
 
     /// Execute one instruction.
