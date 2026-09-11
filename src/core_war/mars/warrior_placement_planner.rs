@@ -54,27 +54,20 @@ impl WarriorPlacementPlanner {
     fn determine_placements_random(&self, core: &Core, warriors: &[Warrior]) -> Box<[usize]> {
         let num_warriors = warriors.len();
 
-        let instruction_lengths = warriors
-            .iter()
-            .map(|warrior| warrior.instructions.len())
-            .collect::<Vec<_>>();
-
-        let warrior_ids_in_spawning_order = Self::get_warrior_ids_in_random_order(num_warriors);
-
-        let separators = self.generate_random_separators(core, warriors);
-
         let mut placements = Vec::with_capacity(num_warriors);
         let mut address = 0;
 
-        for ((&warrior_id, separator), instruction_length) in warrior_ids_in_spawning_order
+        for (&warrior_id, separator) in Self::get_warrior_ids_in_random_order(num_warriors)
             .iter()
-            .zip(separators.iter())
-            .zip(instruction_lengths.iter())
+            .zip(self.generate_random_separators(core, warriors))
         {
             placements.push(Placement {
                 warrior_id,
                 address,
             });
+
+            #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+            let instruction_length = warriors[warrior_id.as_index()].instructions.len();
 
             #[allow(clippy::arithmetic_side_effects, reason = "These operations are safe.")]
             {
