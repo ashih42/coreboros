@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 
 use crate::{
-    core_war::{address::Address, config::core_dimension::CoreDimension, mars::Mars},
+    core_war::{config::core_dimension::CoreDimension, core_number::CoreNumber, mars::Mars},
     game_context::renderer::color,
     instruction::opcode::Opcode,
     scene::arena::rendering_utils,
@@ -36,7 +36,7 @@ impl GridRenderer {
         }
     }
 
-    pub fn render(&self, mars: &Mars, current_warrior_id: WarriorId, selected_address: Address) {
+    pub fn render(&self, mars: &Mars, current_warrior_id: WarriorId, selected_address: CoreNumber) {
         self.draw_core(mars, selected_address);
         self.draw_tasks(mars, current_warrior_id);
     }
@@ -49,14 +49,14 @@ impl GridRenderer {
         clippy::cast_precision_loss,
         reason = "These operations are safe."
     )]
-    fn draw_core(&self, mars: &Mars, selected_address: Address) {
+    fn draw_core(&self, mars: &Mars, selected_address: CoreNumber) {
         const BORDER_THICKNESS: f32 = 1.0;
         const SELECTED_BORDER_THICKNESS: f32 = 4.0;
         const BORDER_COLOR: macroquad::color::Color = WHITE;
 
         for x in 0..self.num_columns {
             for y in 0..self.num_rows {
-                let address = y * self.num_columns + x;
+                let address = CoreNumber::from_usize_unchecked(y * self.num_columns + x);
 
                 let cell = mars.core.get_cell(address);
                 let cell_color = color::get_mq_color(cell.operation_author.into());
@@ -125,7 +125,7 @@ impl GridRenderer {
     }
 
     /// Draw a circle to indicate a task at an adress in the core.
-    fn draw_task(&self, address: Address, warrior_id: WarriorId, is_current_task: bool) {
+    fn draw_task(&self, address: CoreNumber, warrior_id: WarriorId, is_current_task: bool) {
         const TASK_RADIUS: f32 = 5.0;
         const TASK_BORDER_COLOR: macroquad::color::Color = WHITE;
 
@@ -145,9 +145,9 @@ impl GridRenderer {
         clippy::cast_precision_loss,
         reason = "These operations are safe."
     )]
-    fn address_to_cell_center(&self, address: usize) -> (f32, f32) {
-        let x = address % self.num_columns;
-        let y = address / self.num_columns;
+    fn address_to_cell_center(&self, address: CoreNumber) -> (f32, f32) {
+        let x = address.as_index() % self.num_columns;
+        let y = address.as_index() / self.num_columns;
 
         let x_rect = (x as f32) * self.cell_width;
         let y_rect = (y as f32) * self.cell_height;

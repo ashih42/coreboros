@@ -1,7 +1,7 @@
 use crate::{
     core_war::{
-        address::Address,
         config::Config,
+        core_number::CoreNumber,
         mars::{
             core::Core, task_outcome::TaskOutcome, task_queue::TaskQueue,
             warrior_placement_planner::WarriorPlacementPlanner,
@@ -79,14 +79,12 @@ impl Mars {
         warrior: &Warrior,
         starting_position: usize,
     ) {
-        let core_size = self.core.get_size();
-
         for (i, instruction) in warrior.instructions.iter().enumerate() {
             #[allow(
                 clippy::arithmetic_side_effects,
-                reason = "These operations are valid."
+                reason = "This expression cannot cause overflow."
             )]
-            let position = (starting_position + i) % core_size;
+            let position = CoreNumber::from_usize(starting_position + i, self.core.get_size());
 
             self.core
                 .wrap_and_load_instruction(position, instruction, Some(warrior_id));
@@ -110,18 +108,17 @@ impl Mars {
     }
 
     /// Spawn the initial task for a specific warrior.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "These operations are valid."
-    )]
     fn spawn_initial_task(
         &mut self,
         warrior_id: WarriorId,
         warrior: &Warrior,
         starting_position: usize,
     ) {
-        let task = (starting_position + warrior.origin) % self.core.get_size();
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This expression cannot cause overflow."
+        )]
+        let task = CoreNumber::from_usize(starting_position + warrior.origin, self.core.get_size());
 
         self.get_task_queue_mut(warrior_id).push_if_not_full(task);
     }
@@ -177,7 +174,7 @@ impl Mars {
     fn execute_instruction(
         &mut self,
         instruction: &Instruction,
-        address: Address,
+        address: CoreNumber,
         warrior_id: WarriorId,
     ) -> TaskOutcome {
         self.write_pre_decrement(instruction, address, warrior_id);
@@ -193,7 +190,7 @@ impl Mars {
     fn write_pre_decrement(
         &mut self,
         instruction: &Instruction,
-        address: Address,
+        address: CoreNumber,
         warrior_id: WarriorId,
     ) {
         // Update the indirect A cell's A or B field if applicable.
@@ -227,7 +224,7 @@ impl Mars {
     fn write_post_increment(
         &mut self,
         instruction: &Instruction,
-        address: Address,
+        address: CoreNumber,
         warrior_id: WarriorId,
     ) {
         let a_indirect_address = self.core.resolve_address(address, instruction.a.number);
@@ -259,7 +256,7 @@ impl Mars {
     fn execute_by_opcode(
         &mut self,
         instruction: &Instruction,
-        address: Address,
+        address: CoreNumber,
         warrior_id: WarriorId,
     ) -> TaskOutcome {
         use opcode_executor as exec;

@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 
 use crate::{
-    core_war::{address::Address, config::core_dimension::CoreDimension, mars::Mars},
+    core_war::{config::core_dimension::CoreDimension, core_number::CoreNumber, mars::Mars},
     game_context::renderer::color,
     instruction::opcode::Opcode,
     scene::arena::rendering_utils,
@@ -53,7 +53,7 @@ impl RingRenderer {
         }
     }
 
-    pub fn render(&self, mars: &Mars, current_warrior_id: WarriorId, selected_address: Address) {
+    pub fn render(&self, mars: &Mars, current_warrior_id: WarriorId, selected_address: CoreNumber) {
         self.draw_core(mars);
         self.highlight_selected_cell(selected_address);
         self.draw_tasks(mars, current_warrior_id);
@@ -76,7 +76,8 @@ impl RingRenderer {
         // Draw all cells in the core, overwriting pie slices from outside to inside.
         for sector_index in 0..self.num_sectors {
             for ring_index in 0..self.num_rings {
-                let address = sector_index * self.num_rings + ring_index;
+                let address =
+                    CoreNumber::from_usize_unchecked(sector_index * self.num_rings + ring_index);
 
                 let cell = mars.core.get_cell(address);
                 let cell_color = color::get_mq_color(cell.operation_author.into());
@@ -146,12 +147,12 @@ impl RingRenderer {
         clippy::suboptimal_flops,
         reason = "`mul_add` would be actually worse in performance for wasm."
     )]
-    fn draw_bomb(&self, address: Address) {
+    fn draw_bomb(&self, address: CoreNumber) {
         const BOMB_THICKNESS: f32 = 1.5;
         const BOMB_COLOR: macroquad::color::Color = WHITE;
 
-        let sector_index = address / self.num_rings;
-        let ring_index = address % self.num_rings;
+        let sector_index = address.as_index() / self.num_rings;
+        let ring_index = address.as_index() % self.num_rings;
 
         let radius_outer = self.big_radius - self.ring_width * (ring_index as f32);
         let radius_inner = self.big_radius - self.ring_width * ((ring_index + 1) as f32);
@@ -181,11 +182,11 @@ impl RingRenderer {
         clippy::suboptimal_flops,
         reason = "`mul_add` would be actually worse in performance for wasm."
     )]
-    fn highlight_selected_cell(&self, selected_address: Address) {
+    fn highlight_selected_cell(&self, selected_address: CoreNumber) {
         const SELECTED_BORDER_THICKNESS: f32 = 4.0;
 
-        let sector_index = selected_address / self.num_rings;
-        let ring_index = selected_address % self.num_rings;
+        let sector_index = selected_address.as_index() / self.num_rings;
+        let ring_index = selected_address.as_index() % self.num_rings;
 
         let radius_outer = self.big_radius - self.ring_width * (ring_index as f32);
         let radius_inner = self.big_radius - self.ring_width * ((ring_index + 1) as f32);
@@ -269,15 +270,15 @@ impl RingRenderer {
         clippy::suboptimal_flops,
         reason = "`mul_add` would be actually worse in performance for wasm."
     )]
-    fn draw_task(&self, address: Address, warrior_id: WarriorId, is_current_task: bool) {
+    fn draw_task(&self, address: CoreNumber, warrior_id: WarriorId, is_current_task: bool) {
         const TASK_RADIUS: f32 = 5.0;
         const TASK_BORDER_COLOR: macroquad::color::Color = WHITE;
 
         let warrior_color = color::get_mq_color(Some(warrior_id));
         let thickness = if is_current_task { 5.0 } else { 1.0 };
 
-        let sector_index = address / self.num_rings;
-        let ring_index = address % self.num_rings;
+        let sector_index = address.as_index() / self.num_rings;
+        let ring_index = address.as_index() % self.num_rings;
 
         let radius = self.big_radius - self.ring_width * (ring_index as f32 + 0.5);
 

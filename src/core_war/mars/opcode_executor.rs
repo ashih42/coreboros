@@ -5,7 +5,7 @@
 
 use crate::{
     core_war::{
-        address::Address,
+        core_number::CoreNumber,
         mars::{core::Core, math_executor::ArithmeticOperation, task_outcome::TaskOutcome},
     },
     instruction::{
@@ -19,7 +19,7 @@ use crate::{
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#dat-data>
 pub const fn exec_dat(
     _instruction: &Instruction,
-    _current_address: Address,
+    _current_address: CoreNumber,
     _core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -31,7 +31,7 @@ pub const fn exec_dat(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#mov-move>
 pub fn exec_mov(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -75,7 +75,7 @@ pub fn exec_mov(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#add-add>
 pub fn exec_add(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -93,7 +93,7 @@ pub fn exec_add(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#sub-subtract>
 pub fn exec_sub(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -111,7 +111,7 @@ pub fn exec_sub(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#mul-multiply>
 pub fn exec_mul(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -130,7 +130,7 @@ pub fn exec_mul(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#div-divide>
 pub fn exec_div(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -149,7 +149,7 @@ pub fn exec_div(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#mod-modulo>
 pub fn exec_mod(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -168,7 +168,7 @@ pub fn exec_mod(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#jmp-jump>
 pub fn exec_jmp(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -180,7 +180,7 @@ pub fn exec_jmp(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#jmz-jump-if-zero>
 pub fn exec_jmz(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -207,7 +207,7 @@ pub fn exec_jmz(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#jmn-jump-if-not-zero>
 pub fn exec_jmn(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -234,7 +234,7 @@ pub fn exec_jmn(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#djn-decrement-and-jump-if-not-zero>
 pub fn exec_djn(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -304,7 +304,7 @@ pub fn exec_djn(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#spl-split>
 pub fn exec_spl(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -322,7 +322,7 @@ pub fn exec_spl(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#seq-skip-if-equal>
 pub fn exec_seq(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -354,7 +354,7 @@ pub fn exec_seq(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#sne-skip-if-not-equal>
 pub fn exec_sne(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -387,7 +387,7 @@ pub fn exec_sne(
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#slt-skip-if-less-than>
 pub fn exec_slt(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -414,7 +414,7 @@ pub fn exec_slt(
 /// This operation does nothing.
 pub const fn exec_nop(
     _instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
@@ -424,7 +424,7 @@ pub const fn exec_nop(
 /// Try to perform the arithmetic operation.  If the operation fails (e.g. division or modulo by 0), the process dies.
 fn do_arithmetic(
     instruction: &Instruction,
-    current_address: Address,
+    current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
     arithmetic: ArithmeticOperation,
@@ -493,7 +493,7 @@ const fn die() -> TaskOutcome {
     TaskOutcome::Died
 }
 
-const fn live(current_address: Address, next_address_offset: i32, core: &Core) -> TaskOutcome {
+const fn live(current_address: CoreNumber, next_address_offset: i32, core: &Core) -> TaskOutcome {
     let next_address = core.resolve_address(current_address, next_address_offset);
 
     TaskOutcome::Lived {
@@ -501,7 +501,7 @@ const fn live(current_address: Address, next_address_offset: i32, core: &Core) -
     }
 }
 
-fn do_jump(target_operand: Operand, current_address: Address, core: &Core) -> TaskOutcome {
+fn do_jump(target_operand: Operand, current_address: CoreNumber, core: &Core) -> TaskOutcome {
     let target_address = core.resolve_operand_address(target_operand, current_address);
 
     TaskOutcome::Lived {

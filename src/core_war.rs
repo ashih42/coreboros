@@ -3,8 +3,8 @@ use crate::{
     warrior::{Warrior, warrior_id::WarriorId},
 };
 
-pub mod address;
 pub mod config;
+pub mod core_number;
 pub mod mars;
 
 mod score_keeper;

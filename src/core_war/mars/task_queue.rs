@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
 
-use crate::core_war::address::Address;
+use crate::core_war::core_number::CoreNumber;
 
 /// `TaskQueue` is a FIFO queue for "tasks", which are simply addresses in the core.
 #[derive(Debug)]
 pub struct TaskQueue {
-    tasks: VecDeque<Address>,
+    tasks: VecDeque<CoreNumber>,
 }
 
 impl TaskQueue {
@@ -20,21 +20,21 @@ impl TaskQueue {
         self.tasks.capacity()
     }
 
-    pub fn push_if_not_full(&mut self, address: Address) {
+    pub fn push_if_not_full(&mut self, task: CoreNumber) {
         if self.tasks.len() < self.tasks.capacity() {
-            self.tasks.push_back(address);
+            self.tasks.push_back(task);
         }
     }
 
-    pub fn peek(&self) -> Option<Address> {
+    pub fn peek(&self) -> Option<CoreNumber> {
         self.tasks.front().copied()
     }
 
-    pub fn pop(&mut self) -> Option<Address> {
+    pub fn pop(&mut self) -> Option<CoreNumber> {
         self.tasks.pop_front()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Address> {
+    pub fn iter(&self) -> impl Iterator<Item = &CoreNumber> {
         self.tasks.iter()
     }
 
@@ -51,8 +51,8 @@ impl TaskQueue {
         self.tasks.len()
     }
 
-    pub fn contains(&self, address: Address) -> bool {
-        self.tasks.contains(&address)
+    pub fn contains(&self, task: CoreNumber) -> bool {
+        self.tasks.contains(&task)
     }
 
     pub fn clear(&mut self) {

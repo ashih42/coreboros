@@ -1,7 +1,7 @@
 use crate::{
     core_war::{
-        address::Address,
         config::{Config, core_initialization_strategy::CoreInitializationStrategy},
+        core_number::CoreNumber,
         mars::{core_cell::CoreCell, math_executor::MathExecutor},
     },
     instruction::{Instruction, addressing_mode::AddressingMode, operand::Operand},
@@ -62,24 +62,28 @@ impl Core {
         self.cells.len()
     }
 
-    /// Note: This function requires `address` to be valid.
+    /// Note: `address` can be safely used as an index to access `cells`.
     #[inline]
-    #[allow(clippy::indexing_slicing, reason = "The `address` is valid.")]
-    pub fn get_cell(&self, address: Address) -> &CoreCell {
-        &self.cells[address]
+    pub fn get_cell(&self, address: CoreNumber) -> &CoreCell {
+        let index = address.as_index();
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        &self.cells[index]
     }
 
-    /// Note: This function requires `address` to be valid.
+    /// Note: `address` can be safely used as an index to access `cells`.
     #[inline]
-    #[allow(clippy::indexing_slicing, reason = "The `address` is valid.")]
-    pub fn get_cell_mut(&mut self, address: Address) -> &mut CoreCell {
-        &mut self.cells[address]
+    pub fn get_cell_mut(&mut self, address: CoreNumber) -> &mut CoreCell {
+        let index = address.as_index();
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        &mut self.cells[index]
     }
 
     /// Given an `instruction`, wrap its operand values, and load this wrapped instruction to the core at `address`.
     pub fn wrap_and_load_instruction(
         &mut self,
-        address: Address,
+        address: CoreNumber,
         instruction: &Instruction,
         author: Option<WarriorId>,
     ) {
@@ -89,7 +93,7 @@ impl Core {
     }
 
     /// Note: This function requires `address` to be valid.
-    pub fn increment_a_number(&mut self, address: Address, author: WarriorId) {
+    pub fn increment_a_number(&mut self, address: CoreNumber, author: WarriorId) {
         let a_number = self.get_cell(address).instruction.a.number;
         let a_number = self.math_executor.increment(a_number);
 
@@ -98,7 +102,7 @@ impl Core {
     }
 
     /// Note: This function requires `address` to be valid.
-    pub fn increment_b_number(&mut self, address: Address, author: WarriorId) {
+    pub fn increment_b_number(&mut self, address: CoreNumber, author: WarriorId) {
         let b_number = self.get_cell(address).instruction.b.number;
         let b_number = self.math_executor.increment(b_number);
 
@@ -107,7 +111,7 @@ impl Core {
     }
 
     /// Note: This function requires `address` to be valid.
-    pub fn decrement_a_number(&mut self, address: Address, author: WarriorId) {
+    pub fn decrement_a_number(&mut self, address: CoreNumber, author: WarriorId) {
         let a_number = self.get_cell(address).instruction.a.number;
         let a_number = self.math_executor.decrement(a_number);
 
@@ -116,7 +120,7 @@ impl Core {
     }
 
     /// Note: This function requires `address` to be valid.
-    pub fn decrement_b_number(&mut self, address: Address, author: WarriorId) {
+    pub fn decrement_b_number(&mut self, address: CoreNumber, author: WarriorId) {
         let b_number = self.get_cell(address).instruction.b.number;
         let b_number = self.math_executor.decrement(b_number);
 
@@ -124,22 +128,25 @@ impl Core {
         cell.set_b_number(b_number, author);
     }
 
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_possible_wrap,
-        clippy::as_conversions,
-        clippy::arithmetic_side_effects,
-        reason = "These operations are valid 👌"
-    )]
-    pub const fn resolve_address(&self, address: Address, offset: i32) -> Address {
-        let destination = (address as i32) + offset;
-        destination.rem_euclid(self.get_size() as i32) as Address
+    pub const fn resolve_address(&self, address: CoreNumber, offset: i32) -> CoreNumber {
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "This expression cannot cause overflow/underflow."
+        )]
+        let destination = address.as_i32() + offset;
+        let core_size = self.get_size();
+
+        CoreNumber::from_i32(destination, core_size)
     }
 
     /// Determine the address specified in the `operand`.
     /// Pre-decrement and Post-increment operations are handled before/after this function,
     /// so here it is okay to resolve these variations of indirect modes in the same way.
-    pub fn resolve_operand_address(&self, operand: Operand, current_address: Address) -> Address {
+    pub fn resolve_operand_address(
+        &self,
+        operand: Operand,
+        current_address: CoreNumber,
+    ) -> CoreNumber {
         use AddressingMode as AM;
 
         let indirect_address = self.resolve_address(current_address, operand.number);
@@ -159,7 +166,7 @@ impl Core {
 
     pub fn resolve_instruction_a_b(
         &self,
-        current_address: Address,
+        current_address: CoreNumber,
         operand: Operand,
     ) -> (Instruction, i32, i32) {
         let address = self.resolve_operand_address(operand, current_address);
@@ -185,12 +192,31 @@ mod tests {
 
     #[test]
     fn test_resolve_address() {
-        let config = Config::default(); // Default core size is 10 x 8 = 80
+        let config = Config::default();
         let core = Core::new(&config);
+        let core_size = core.get_size();
 
-        assert_eq!(core.resolve_address(0, 0), 0);
-        assert_eq!(core.resolve_address(0, 10), 10);
-        assert_eq!(core.resolve_address(0, 100), 20);
-        assert_eq!(core.resolve_address(0, -1), 79);
+        // Note: The correct values for this test depend on the premise that `core_size` is 80.
+        assert_eq!(core_size, 80);
+
+        assert_eq!(
+            core.resolve_address(CoreNumber::from_i32(0, core_size), 0),
+            CoreNumber::from_i32(0, core_size)
+        );
+
+        assert_eq!(
+            core.resolve_address(CoreNumber::from_i32(0, core_size), 10),
+            CoreNumber::from_i32(10, core_size)
+        );
+
+        assert_eq!(
+            core.resolve_address(CoreNumber::from_i32(0, core_size), 100),
+            CoreNumber::from_i32(20, core_size)
+        );
+
+        assert_eq!(
+            core.resolve_address(CoreNumber::from_i32(0, core_size), -1),
+            CoreNumber::from_i32(79, core_size)
+        );
     }
 }

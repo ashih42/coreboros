@@ -1,13 +1,13 @@
-use crate::core_war::address::Address;
+use crate::core_war::core_number::CoreNumber;
 
 /// `TaskOutcome` represents all possible task outputs, given a task input.
 pub enum TaskOutcome {
     Spawned {
-        current_task: Address,
-        new_task: Address,
+        current_task: CoreNumber,
+        new_task: CoreNumber,
     },
     Lived {
-        current_task: Address,
+        current_task: CoreNumber,
     },
     Died,
 }

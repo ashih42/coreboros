@@ -2,7 +2,7 @@ use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
-    core_war::{CoreWar, address::Address, config::Config},
+    core_war::{CoreWar, config::Config, core_number::CoreNumber},
     game_context::{
         GameContext,
         renderer::{Renderer, color},
@@ -35,7 +35,7 @@ const RIGHT_SIDEBAR_WIDTH: f32 = 360.0;
 /// observe their effects on the core.
 pub struct Arena {
     core_war: CoreWar,
-    selected_address: Address,
+    selected_address: CoreNumber,
     display_mode: DisplayMode,
     playback_manager: PlaybackManager,
     should_reset_scrollbar_in_coredump: bool,
@@ -60,7 +60,7 @@ impl Arena {
     pub fn new(warriors: Box<[Warrior]>, config: Config) -> Self {
         Self {
             core_war: CoreWar::new(warriors, config),
-            selected_address: 0,
+            selected_address: CoreNumber::default(),
             display_mode: DisplayMode::Grid,
             playback_manager: PlaybackManager::default(),
             should_reset_scrollbar_in_coredump: false,
@@ -118,7 +118,7 @@ impl Arena {
     fn start_new_game(&mut self) {
         self.stop();
 
-        self.selected_address = 0;
+        self.selected_address = CoreNumber::default();
         self.core_war.reset(self.core_war.game_over);
     }
 
@@ -176,10 +176,17 @@ impl Arena {
         let core_size = self.core_war.config.core_dimension.as_size();
         let (_, num_rings) = self.core_war.config.core_dimension.as_ring_dimensions();
 
-        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "These expressions cannot cause overflow/underflow."
+        )]
         let new_address = match self.display_mode {
-            DisplayMode::Grid => (self.selected_address + core_size - 1) % core_size,
-            DisplayMode::Ring => (self.selected_address + num_rings) % core_size,
+            DisplayMode::Grid => {
+                CoreNumber::from_usize(self.selected_address.as_index() + core_size - 1, core_size)
+            }
+            DisplayMode::Ring => {
+                CoreNumber::from_usize(self.selected_address.as_index() + num_rings, core_size)
+            }
         };
 
         self.set_selected_address(new_address);
@@ -190,10 +197,18 @@ impl Arena {
         let core_size = self.core_war.config.core_dimension.as_size();
         let (_, num_rings) = self.core_war.config.core_dimension.as_ring_dimensions();
 
-        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "These expressions cannot cause overflow/underflow."
+        )]
         let new_address = match self.display_mode {
-            DisplayMode::Grid => (self.selected_address + 1) % core_size,
-            DisplayMode::Ring => (self.selected_address + core_size - num_rings) % core_size,
+            DisplayMode::Grid => {
+                CoreNumber::from_usize(self.selected_address.as_index() + 1, core_size)
+            }
+            DisplayMode::Ring => CoreNumber::from_usize(
+                self.selected_address.as_index() + core_size - num_rings,
+                core_size,
+            ),
         };
 
         self.set_selected_address(new_address);
@@ -204,10 +219,18 @@ impl Arena {
         let core_size = self.core_war.config.core_dimension.as_size();
         let (width, _) = self.core_war.config.core_dimension.as_grid_dimensions();
 
-        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "These expressions cannot cause overflow/underflow."
+        )]
         let new_address = match self.display_mode {
-            DisplayMode::Grid => (self.selected_address + core_size - width) % core_size,
-            DisplayMode::Ring => (self.selected_address + core_size - 1) % core_size,
+            DisplayMode::Grid => CoreNumber::from_usize(
+                self.selected_address.as_index() + core_size - width,
+                core_size,
+            ),
+            DisplayMode::Ring => {
+                CoreNumber::from_usize(self.selected_address.as_index() + core_size - 1, core_size)
+            }
         };
 
         self.set_selected_address(new_address);
@@ -218,10 +241,17 @@ impl Arena {
         let core_size = self.core_war.config.core_dimension.as_size();
         let (width, _) = self.core_war.config.core_dimension.as_grid_dimensions();
 
-        #[allow(clippy::arithmetic_side_effects, reason = "This expression is safe.")]
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "These expressions cannot cause overflow/underflow."
+        )]
         let new_address = match self.display_mode {
-            DisplayMode::Grid => (self.selected_address + width) % core_size,
-            DisplayMode::Ring => (self.selected_address + core_size + 1) % core_size,
+            DisplayMode::Grid => {
+                CoreNumber::from_usize(self.selected_address.as_index() + width, core_size)
+            }
+            DisplayMode::Ring => {
+                CoreNumber::from_usize(self.selected_address.as_index() + core_size + 1, core_size)
+            }
         };
 
         self.set_selected_address(new_address);
@@ -241,7 +271,7 @@ impl Arena {
 
     /// Update the selected address AND ALSO set flag to reset scrollbar.
     #[inline]
-    const fn set_selected_address(&mut self, address: Address) {
+    const fn set_selected_address(&mut self, address: CoreNumber) {
         self.selected_address = address;
         self.should_reset_scrollbar_in_coredump = true;
     }
@@ -255,11 +285,12 @@ impl Arena {
 
     /// Change the selected address to wherever mouse LMB clicked in the grid view of the core.
     #[allow(
-        clippy::cast_precision_loss,
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
+        clippy::arithmetic_side_effects,
         clippy::as_conversions,
-        reason = "These casts are valid 👌"
+        clippy::cast_possible_truncation,
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        reason = "These operations are valid 👌"
     )]
     fn process_mouse_events_in_grid_view(&mut self, camera: &Camera2D) {
         let game_area_width = Self::get_game_area_width();
@@ -283,7 +314,7 @@ impl Arena {
                 let x = (world_pos.x / cell_width) as usize;
                 let y = (world_pos.y / cell_height) as usize;
 
-                let new_address = self.get_address(x, y);
+                let new_address = CoreNumber::from_usize_unchecked(y * width + x);
                 self.set_selected_address(new_address);
             }
         }
@@ -299,11 +330,6 @@ impl Arena {
 
     /// Configure the camera for the game area.
     /// Note: This must be done on every frame because window size may change at any time.
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::as_conversions,
-        reason = "These casts are valid."
-    )]
     fn set_game_camera() -> Camera2D {
         // Calculate dynamic dimensions for the center gameplay area
         let game_area_width = Self::get_game_area_width();
@@ -321,12 +347,19 @@ impl Arena {
         game_camera.zoom.y = -game_camera.zoom.y;
 
         // 3. Assign the viewport bounds so it renders strictly within the center of the display screen
-        game_camera.viewport = Some((
-            LEFT_SIDEBAR_WIDTH as i32,
-            0,
-            game_area_width as i32,
-            game_area_height as i32,
-        ));
+        game_camera.viewport = {
+            #[allow(
+                clippy::as_conversions,
+                clippy::cast_possible_truncation,
+                reason = "All values can safely fit within `i32`."
+            )]
+            Some((
+                LEFT_SIDEBAR_WIDTH as i32,
+                0,
+                game_area_width as i32,
+                game_area_height as i32,
+            ))
+        };
 
         set_camera(&game_camera);
         game_camera
@@ -704,7 +737,8 @@ impl Arena {
 
             #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
             for i in 0..NUM_ROWS_IN_COREDUMP {
-                let address = (self.selected_address + i) % core_size;
+                let address =
+                    CoreNumber::from_usize(self.selected_address.as_index() + i, core_size);
                 let cell = self.core_war.mars.core.get_cell(address);
 
                 ui.horizontal(|ui| {
@@ -755,7 +789,7 @@ impl Arena {
 
     /// Draw a slot showing the absolute address number of a row in the core dump.
     fn draw_address_slot(
-        address: usize,
+        address: CoreNumber,
         bg_color: egui::Color32,
         slot_width: f32,
         ui: &mut egui::Ui,
@@ -767,7 +801,10 @@ impl Arena {
                 .inner_margin(egui::Margin::symmetric(4, 2))
                 .show(ui, |ui| {
                     ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                        ui.colored_label(egui::Color32::WHITE, renderer.usize_to_str(address));
+                        ui.colored_label(
+                            egui::Color32::WHITE,
+                            renderer.usize_to_str(address.as_index()),
+                        );
                     });
                 });
         });
@@ -856,7 +893,7 @@ impl Arena {
     /// Draw an warrior icon at this address if there is a warrior with a task at this address.
     fn draw_warrior_icon_at_address(
         &self,
-        address: Address,
+        address: CoreNumber,
         ui: &mut egui::Ui,
         renderer: &Renderer,
     ) {
@@ -917,16 +954,5 @@ impl Arena {
     #[inline]
     fn get_game_area_height() -> f32 {
         screen_height()
-    }
-
-    /// Convert position `(x, y)` to an address value to index into the `Core`.
-    #[inline]
-    const fn get_address(&self, x: usize, y: usize) -> usize {
-        let (width, _) = self.core_war.config.core_dimension.as_grid_dimensions();
-
-        #[allow(clippy::arithmetic_side_effects, reason = "This operation is valid 👌")]
-        {
-            y * width + x
-        }
     }
 }
