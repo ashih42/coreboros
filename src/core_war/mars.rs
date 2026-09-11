@@ -126,7 +126,7 @@ impl Mars {
         self.get_task_queue_mut(warrior_id).push_if_not_full(task);
     }
 
-    /// Reset the core and task queues, and load warriors' instructions to core for a new game.
+    /// Reset the core and task queues, and load warriors for a new game.
     pub fn reset(&mut self, warriors: &[Warrior]) {
         self.core.reset();
 
@@ -137,73 +137,87 @@ impl Mars {
         self.load_warriors(warriors);
     }
 
-    /// Execute one instruction.
+    /// Execute one instruction for the given `warrior_id`.
+    /// Note: The current instruction to execute is cached. This is an important, as the values in the address
+    /// containing the current instruction could be mutated in the middle of executing this instruction.
     #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
-    pub fn step(&mut self, current_warrior_id: WarriorId) {
-        Self::execute_task(
-            current_warrior_id,
-            &mut self.task_queues[current_warrior_id.as_index()],
-            // self.get_task_queue_mut(current_warrior_id), // TODO: WHY THIS NO WORK?
-            &mut self.core,
-        );
+    pub fn step(&mut self, warrior_id: WarriorId) {
+        if let Some(address) = self.get_task_queue_mut(warrior_id).pop() {
+            let instruction = self.core.get_cell(address).instruction;
+            let outcome = self.execute_instruction(&instruction, address, warrior_id);
+            self.process_outcome(outcome, warrior_id);
+        }
     }
 
-    /// Pop off one task, execute it, and push resulting new task(s) back to the queue.
-    fn execute_task(warrior_id: WarriorId, task_queue: &mut TaskQueue, core: &mut Core) {
-        if let Some(address) = task_queue.pop() {
-            let instruction = core.get_cell(address).instruction; // Cache the current instruction to be executed.
+    /// Push the new task(s) in `outcome` into the given warrior's task queue.
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "This is the correct place to consume `outcome`."
+    )]
+    pub fn process_outcome(&mut self, outcome: TaskOutcome, warrior_id: WarriorId) {
+        let task_queue = self.get_task_queue_mut(warrior_id);
 
-            // macroquad::prelude::info!(
-            //     "Warrior {} executes at address {:>4}:\t{}\t{}\t{}",
-            //     warrior_id, address, &instruction.operation, &instruction.a, &instruction.b
-            // );
-
-            match Self::execute_instruction(&instruction, address, core, warrior_id) {
-                TaskOutcome::Spawned {
-                    current_task,
-                    new_task,
-                } => {
-                    task_queue.push_if_not_full(current_task);
-                    task_queue.push_if_not_full(new_task);
-                }
-                TaskOutcome::Lived { current_task } => {
-                    task_queue.push_if_not_full(current_task);
-                }
-                TaskOutcome::Died => (),
+        match outcome {
+            TaskOutcome::Spawned {
+                current_task,
+                new_task,
+            } => {
+                task_queue.push_if_not_full(current_task);
+                task_queue.push_if_not_full(new_task);
             }
+            TaskOutcome::Lived { current_task } => {
+                task_queue.push_if_not_full(current_task);
+            }
+            TaskOutcome::Died => (),
         }
+    }
+
+    /// Handle pre-decrement, then execute the instruction, then handle post-increment.
+    fn execute_instruction(
+        &mut self,
+        instruction: &Instruction,
+        address: Address,
+        warrior_id: WarriorId,
+    ) -> TaskOutcome {
+        self.write_pre_decrement(instruction, address, warrior_id);
+
+        let outcome = self.execute_by_opcode(instruction, address, warrior_id);
+
+        self.write_post_increment(instruction, address, warrior_id);
+
+        outcome
     }
 
     /// Check if `instruction` does pre-decrement in its A mode or B mode, and update the target cell's A or B field if applicable.
     fn write_pre_decrement(
+        &mut self,
         instruction: &Instruction,
         address: Address,
-        core: &mut Core,
         warrior_id: WarriorId,
     ) {
         // Update the indirect A cell's A or B field if applicable.
-        let a_indirect_address = core.resolve_address(address, instruction.a.number);
+        let a_indirect_address = self.core.resolve_address(address, instruction.a.number);
 
         match instruction.a.mode {
             AddressingMode::AIndirectPreDecrement => {
-                core.decrement_a_number(a_indirect_address, warrior_id);
+                self.core.decrement_a_number(a_indirect_address, warrior_id);
             }
             AddressingMode::BIndirectPreDecrement => {
-                core.decrement_b_number(a_indirect_address, warrior_id);
+                self.core.decrement_b_number(a_indirect_address, warrior_id);
             }
             _ => (),
         }
 
         // Update the indirect B cell's A or B field if applicable.
-        let b_indirect_address = core.resolve_address(address, instruction.b.number);
+        let b_indirect_address = self.core.resolve_address(address, instruction.b.number);
 
         match instruction.b.mode {
             AddressingMode::AIndirectPreDecrement => {
-                core.decrement_a_number(b_indirect_address, warrior_id);
+                self.core.decrement_a_number(b_indirect_address, warrior_id);
             }
             AddressingMode::BIndirectPreDecrement => {
-                core.decrement_b_number(b_indirect_address, warrior_id);
+                self.core.decrement_b_number(b_indirect_address, warrior_id);
             }
             _ => (),
         }
@@ -211,60 +225,46 @@ impl Mars {
 
     /// Check if `instruction` does post-decrement in its A mode or B mode, and update the target cell's A or B field if applicable.
     fn write_post_increment(
+        &mut self,
         instruction: &Instruction,
         address: Address,
-        core: &mut Core,
         warrior_id: WarriorId,
     ) {
-        let a_indirect_address = core.resolve_address(address, instruction.a.number);
+        let a_indirect_address = self.core.resolve_address(address, instruction.a.number);
 
         match instruction.a.mode {
             AddressingMode::AIndirectPostIncrement => {
-                core.increment_a_number(a_indirect_address, warrior_id);
+                self.core.increment_a_number(a_indirect_address, warrior_id);
             }
             AddressingMode::BIndirectPostIncrement => {
-                core.increment_b_number(a_indirect_address, warrior_id);
+                self.core.increment_b_number(a_indirect_address, warrior_id);
             }
             _ => (),
         }
 
-        let b_indirect_address = core.resolve_address(address, instruction.b.number);
+        let b_indirect_address = self.core.resolve_address(address, instruction.b.number);
 
         match instruction.b.mode {
             AddressingMode::AIndirectPostIncrement => {
-                core.increment_a_number(b_indirect_address, warrior_id);
+                self.core.increment_a_number(b_indirect_address, warrior_id);
             }
             AddressingMode::BIndirectPostIncrement => {
-                core.increment_b_number(b_indirect_address, warrior_id);
+                self.core.increment_b_number(b_indirect_address, warrior_id);
             }
             _ => (),
         }
-    }
-
-    /// Handle pre-decrement, then execute the instruction, then handle post-increment.
-    fn execute_instruction(
-        instruction: &Instruction,
-        address: Address,
-        core: &mut Core,
-        warrior_id: WarriorId,
-    ) -> TaskOutcome {
-        Self::write_pre_decrement(instruction, address, core, warrior_id);
-
-        let outcome = Self::execute_by_opcode(instruction, address, core, warrior_id);
-
-        Self::write_post_increment(instruction, address, core, warrior_id);
-
-        outcome
     }
 
     /// Execute the instruction by calling the function corresponding to its `opcode`.
     fn execute_by_opcode(
+        &mut self,
         instruction: &Instruction,
         address: Address,
-        core: &mut Core,
         warrior_id: WarriorId,
     ) -> TaskOutcome {
         use opcode_executor as exec;
+
+        let core = &mut self.core;
 
         match instruction.operation.opcode {
             Opcode::DAT => exec::exec_dat(instruction, address, core, warrior_id),
