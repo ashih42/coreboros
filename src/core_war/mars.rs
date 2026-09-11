@@ -73,10 +73,6 @@ impl Mars {
     }
 
     /// Load a specific warrior's instructions to the core.
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "These operations are valid."
-    )]
     fn load_instructions_to_core(
         &mut self,
         warrior_id: WarriorId,
@@ -86,6 +82,10 @@ impl Mars {
         let core_size = self.core.get_size();
 
         for (i, instruction) in warrior.instructions.iter().enumerate() {
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "These operations are valid."
+            )]
             let position = (starting_position + i) % core_size;
 
             self.core
