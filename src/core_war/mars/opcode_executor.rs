@@ -6,11 +6,14 @@
 use crate::{
     core_war::{
         core_number::CoreNumber,
-        mars::{core::Core, math_executor::ArithmeticOperation, task_outcome::TaskOutcome},
+        mars::{
+            core::Core,
+            core_instruction::{CoreInstruction, core_operand::CoreOperand},
+            math_executor::ArithmeticOperation,
+            task_outcome::TaskOutcome,
+        },
     },
-    instruction::{
-        Instruction, addressing_mode::AddressingMode, modifier::Modifier, operand::Operand,
-    },
+    instruction::{addressing_mode::AddressingMode, modifier::Modifier},
     warrior::warrior_id::WarriorId,
 };
 
@@ -18,7 +21,7 @@ use crate::{
 /// Executing this instruction kills the process.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#dat-data>
 pub const fn exec_dat(
-    _instruction: &Instruction,
+    _instruction: &CoreInstruction,
     _current_address: CoreNumber,
     _core: &Core,
     _warrior_id: WarriorId,
@@ -30,7 +33,7 @@ pub const fn exec_dat(
 /// Copy data from source defined in A field to destination defined in B field.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#mov-move>
 pub fn exec_mov(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -67,14 +70,14 @@ pub fn exec_mov(
         }
     }
 
-    live(current_address, 1, core)
+    live(current_address, CoreNumber::from_usize_unchecked(1), core)
 }
 
 /// `ADD` - Add.
 /// This operation may fail as NOP if the destination is not writable.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#add-add>
 pub fn exec_add(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -92,7 +95,7 @@ pub fn exec_add(
 /// This operation may fail as NOP if the destination is not writable.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#sub-subtract>
 pub fn exec_sub(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -110,7 +113,7 @@ pub fn exec_sub(
 /// This operation may fail as NOP if the destination is not writable.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#mul-multiply>
 pub fn exec_mul(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -129,7 +132,7 @@ pub fn exec_mul(
 /// This operation may kill the process if the divisor is zero.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#div-divide>
 pub fn exec_div(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -148,7 +151,7 @@ pub fn exec_div(
 /// This operation may kill the process if the divisor is zero.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#mod-modulo>
 pub fn exec_mod(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -167,7 +170,7 @@ pub fn exec_mod(
 /// This instruction completely ignores its modifier and its B field.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#jmp-jump>
 pub fn exec_jmp(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
@@ -179,7 +182,7 @@ pub fn exec_jmp(
 /// Jump to destination in A field, if ALL relevant items for data from instruction's B field are equal to zero.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#jmz-jump-if-zero>
 pub fn exec_jmz(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
@@ -187,6 +190,8 @@ pub fn exec_jmz(
     use Modifier::{A, AB, B, BA, F, I, X};
 
     let (_, cond_a, cond_b) = core.resolve_instruction_a_b(current_address, instruction.b);
+    let cond_a = cond_a.as_i32();
+    let cond_b = cond_b.as_i32();
 
     let should_jump = match instruction.operation.modifier {
         A | BA => cond_a == 0,
@@ -198,7 +203,7 @@ pub fn exec_jmz(
         return do_jump(instruction.a, current_address, core);
     }
 
-    live(current_address, 1, core)
+    live(current_address, CoreNumber::from_usize_unchecked(1), core)
 }
 
 /// `JMN` - Jump If Not Zero.
@@ -206,7 +211,7 @@ pub fn exec_jmz(
 /// Note: This is different from negation of `JMZ` in the truth table for modifiers F, X, I with compound boolean conditions.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#jmn-jump-if-not-zero>
 pub fn exec_jmn(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
@@ -214,6 +219,8 @@ pub fn exec_jmn(
     use Modifier::{A, AB, B, BA, F, I, X};
 
     let (_, cond_a, cond_b) = core.resolve_instruction_a_b(current_address, instruction.b);
+    let cond_a = cond_a.as_i32();
+    let cond_b = cond_b.as_i32();
 
     let should_jump = match instruction.operation.modifier {
         A | BA => cond_a != 0,
@@ -225,7 +232,7 @@ pub fn exec_jmn(
         return do_jump(instruction.a, current_address, core);
     }
 
-    live(current_address, 1, core)
+    live(current_address, CoreNumber::from_usize_unchecked(1), core)
 }
 
 /// `DJN` - Decrement and Jump If Not Zero.
@@ -233,7 +240,7 @@ pub fn exec_jmn(
 /// and then evaluated to check if ANY item is NOT equal to zero.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#djn-decrement-and-jump-if-not-zero>
 pub fn exec_djn(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -282,6 +289,9 @@ pub fn exec_djn(
         }
     }
 
+    let cond_a = cond_a.as_i32();
+    let cond_b = cond_b.as_i32();
+
     // Decide using the decremented copied numbers.
     let should_jump = match instruction.operation.modifier {
         A | BA => cond_a != 0,
@@ -295,7 +305,7 @@ pub fn exec_djn(
         return do_jump(target_operand, current_address, core);
     }
 
-    live(current_address, 1, core)
+    live(current_address, CoreNumber::from_usize_unchecked(1), core)
 }
 
 /// `SPL` - Split.
@@ -303,13 +313,13 @@ pub fn exec_djn(
 /// This instruction completely ignores its modifier and its B field.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#spl-split>
 pub fn exec_spl(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
     let target_address = core.resolve_operand_address(instruction.a, current_address);
-    let next_address = core.resolve_address(current_address, 1);
+    let next_address = core.resolve_address(current_address, CoreNumber::from_usize_unchecked(1));
 
     TaskOutcome::Spawned {
         current_task: next_address,
@@ -321,7 +331,7 @@ pub fn exec_spl(
 /// Skip the next instruction if targets in A and B are equal.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#seq-skip-if-equal>
 pub fn exec_seq(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
@@ -344,7 +354,7 @@ pub fn exec_seq(
         I => src_instruction == dest_instruction,
     };
 
-    let next_address_offset = if should_skip { 2 } else { 1 };
+    let next_address_offset = CoreNumber::from_usize_unchecked(if should_skip { 2 } else { 1 });
     live(current_address, next_address_offset, core)
 }
 
@@ -353,7 +363,7 @@ pub fn exec_seq(
 /// This is not simply the exact opposite conditional of `SEQ`.  There are edge cases where both `SEQ` and `SNE` would evaluate to the same condition.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#sne-skip-if-not-equal>
 pub fn exec_sne(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
@@ -376,7 +386,7 @@ pub fn exec_sne(
         I => src_instruction != dest_instruction,
     };
 
-    let next_address_offset = if should_skip { 2 } else { 1 };
+    let next_address_offset = CoreNumber::from_usize_unchecked(if should_skip { 2 } else { 1 });
     live(current_address, next_address_offset, core)
 }
 
@@ -386,7 +396,7 @@ pub fn exec_sne(
 /// since an instruction cannot be compared to be less than another instruction.
 /// Reference: <https://corewar-docs.readthedocs.io/en/latest/redcode/opcodes/#slt-skip-if-less-than>
 pub fn exec_slt(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
@@ -406,24 +416,24 @@ pub fn exec_slt(
         X => (src_a < dest_b) && (src_b < dest_a),
     };
 
-    let next_address_offset = if should_skip { 2 } else { 1 };
+    let next_address_offset = CoreNumber::from_usize_unchecked(if should_skip { 2 } else { 1 });
     live(current_address, next_address_offset, core)
 }
 
 /// `NOP` - No Operation.
 /// This operation does nothing.
 pub const fn exec_nop(
-    _instruction: &Instruction,
+    _instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &Core,
     _warrior_id: WarriorId,
 ) -> TaskOutcome {
-    live(current_address, 1, core)
+    live(current_address, CoreNumber::from_usize_unchecked(1), core)
 }
 
 /// Try to perform the arithmetic operation.  If the operation fails (e.g. division or modulo by 0), the process dies.
 fn do_arithmetic(
-    instruction: &Instruction,
+    instruction: &CoreInstruction,
     current_address: CoreNumber,
     core: &mut Core,
     warrior_id: WarriorId,
@@ -440,28 +450,24 @@ fn do_arithmetic(
             if let Some(result_a) = core.math_executor.do_arithmetic(arithmetic, src_a, dest_a) {
                 let dest_cell = core.get_cell_mut(dest_address);
                 dest_cell.set_a_number(result_a, warrior_id);
-                return live(current_address, 1, core);
             }
         }
         Modifier::B => {
             if let Some(result_b) = core.math_executor.do_arithmetic(arithmetic, src_b, dest_b) {
                 let dest_cell = core.get_cell_mut(dest_address);
                 dest_cell.set_b_number(result_b, warrior_id);
-                return live(current_address, 1, core);
             }
         }
         Modifier::AB => {
             if let Some(result_b) = core.math_executor.do_arithmetic(arithmetic, src_a, dest_b) {
                 let dest_cell = core.get_cell_mut(dest_address);
                 dest_cell.set_b_number(result_b, warrior_id);
-                return live(current_address, 1, core);
             }
         }
         Modifier::BA => {
             if let Some(result_a) = core.math_executor.do_arithmetic(arithmetic, src_b, dest_a) {
                 let dest_cell = core.get_cell_mut(dest_address);
                 dest_cell.set_a_number(result_a, warrior_id);
-                return live(current_address, 1, core);
             }
         }
         Modifier::F | Modifier::I => {
@@ -471,7 +477,6 @@ fn do_arithmetic(
                 let dest_cell = core.get_cell_mut(dest_address);
                 dest_cell.set_a_number(result_a, warrior_id);
                 dest_cell.set_b_number(result_b, warrior_id);
-                return live(current_address, 1, core);
             }
         }
         Modifier::X => {
@@ -481,19 +486,22 @@ fn do_arithmetic(
                 let dest_cell = core.get_cell_mut(dest_address);
                 dest_cell.set_a_number(result_a, warrior_id);
                 dest_cell.set_b_number(result_b, warrior_id);
-                return live(current_address, 1, core);
             }
         }
     }
 
-    die()
+    live(current_address, CoreNumber::from_usize_unchecked(1), core)
 }
 
 const fn die() -> TaskOutcome {
     TaskOutcome::Died
 }
 
-const fn live(current_address: CoreNumber, next_address_offset: i32, core: &Core) -> TaskOutcome {
+const fn live(
+    current_address: CoreNumber,
+    next_address_offset: CoreNumber,
+    core: &Core,
+) -> TaskOutcome {
     let next_address = core.resolve_address(current_address, next_address_offset);
 
     TaskOutcome::Lived {
@@ -501,7 +509,7 @@ const fn live(current_address: CoreNumber, next_address_offset: i32, core: &Core
     }
 }
 
-fn do_jump(target_operand: Operand, current_address: CoreNumber, core: &Core) -> TaskOutcome {
+fn do_jump(target_operand: CoreOperand, current_address: CoreNumber, core: &Core) -> TaskOutcome {
     let target_address = core.resolve_operand_address(target_operand, current_address);
 
     TaskOutcome::Lived {

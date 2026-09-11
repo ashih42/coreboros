@@ -1,4 +1,4 @@
-use crate::instruction::Instruction;
+use crate::core_war::core_number::CoreNumber;
 
 /// `ArithmeticOperation` indicates the 5 kinds of math operations to be performed
 /// with the resulting value wrapped within [0, `core_size`).
@@ -12,51 +12,32 @@ pub enum ArithmeticOperation {
 }
 
 /// `MathExecutor` is responsible for all math operations while executing instructions in the core,
-/// where all values must be "wrapped", or transformed to a value within [0, `core_size`).
+/// where all values must be "wrapped" to a value within the range `[0, core_size - 1]` as a `CoreNumber`.
 pub struct MathExecutor {
-    core_size: i32,
+    core_size: usize,
 }
 
 impl MathExecutor {
     pub const fn new(core_size: usize) -> Self {
-        Self {
-            #[allow(
-                clippy::cast_possible_truncation,
-                clippy::cast_possible_wrap,
-                clippy::as_conversions,
-                reason = "The conversion is safe 👌"
-            )]
-            core_size: core_size as i32,
-        }
+        Self { core_size }
     }
 
-    /// Transform the `number` to a value within [0, `core_size`).
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "The subtraction operation is safe 👌"
-    )]
-    const fn wrap(&self, number: i32) -> i32 {
-        number.rem_euclid(self.core_size)
-    }
-
-    /// Return a new instruction with its A and B numbers wrapped.
-    pub const fn wrap_instruction(&self, instruction: &Instruction) -> Instruction {
-        let mut wrapped_instruction = *instruction;
-
-        wrapped_instruction.a.number = self.wrap(instruction.a.number);
-        wrapped_instruction.b.number = self.wrap(instruction.b.number);
-
-        wrapped_instruction
+    /// Convert the i32 `number` to a `CoreNumber`.
+    const fn wrap(&self, number: i32) -> CoreNumber {
+        CoreNumber::from_i32(number, self.core_size)
     }
 
     /// Perform the specified arithmetic operation with the resulting value wrapped.
     pub const fn do_arithmetic(
         &self,
         arithmetic: ArithmeticOperation,
-        a: i32,
-        b: i32,
-    ) -> Option<i32> {
+        a: CoreNumber,
+        b: CoreNumber,
+    ) -> Option<CoreNumber> {
         use ArithmeticOperation as AO;
+
+        let a = a.as_i32();
+        let b = b.as_i32();
 
         match arithmetic {
             AO::Addition => Some(self.add(a, b)),
@@ -69,67 +50,67 @@ impl MathExecutor {
 
     /// Add `a` and `b`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    pub const fn add(&self, a: i32, b: i32) -> i32 {
+    pub const fn add(&self, a: i32, b: i32) -> CoreNumber {
         #[allow(
             clippy::arithmetic_side_effects,
-            reason = "This operation is always safe."
+            reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
         )]
         self.wrap(b + a)
     }
 
     /// Subtract `a` from `b`, i.e. `b - a`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    pub const fn subtract(&self, a: i32, b: i32) -> i32 {
+    pub const fn subtract(&self, a: i32, b: i32) -> CoreNumber {
         #[allow(
             clippy::arithmetic_side_effects,
-            reason = "This operation is always safe."
+            reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
         )]
         self.wrap(b - a)
     }
 
     /// Multiply `a` and `b`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    const fn multiply(&self, a: i32, b: i32) -> i32 {
+    const fn multiply(&self, a: i32, b: i32) -> CoreNumber {
         #[allow(
             clippy::arithmetic_side_effects,
-            reason = "This operation is always safe."
+            reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
         )]
         self.wrap(b * a)
     }
 
     /// Divide `b` by `a`, i.e. `b / a`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    const fn divide(&self, a: i32, b: i32) -> Option<i32> {
+    const fn divide(&self, a: i32, b: i32) -> Option<CoreNumber> {
         if a == 0 {
             return None;
         }
 
         #[allow(
             clippy::arithmetic_side_effects,
-            reason = "This operation is always safe."
+            reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
         )]
         Some(self.wrap(b / a))
     }
 
     /// Get remainder of dividing `b` by `a`, i.e. `b % a`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    const fn modulo(&self, a: i32, b: i32) -> Option<i32> {
+    const fn modulo(&self, a: i32, b: i32) -> Option<CoreNumber> {
         if a == 0 {
             return None;
         }
 
         #[allow(
             clippy::arithmetic_side_effects,
-            reason = "This operation is always safe."
+            reason = "Because `a` and `b` are at most (core_size - 1), this expression cause overflow/underflow."
         )]
         Some(self.wrap(b % a))
     }
 
-    pub const fn increment(&self, number: i32) -> i32 {
-        self.add(number, 1)
+    pub const fn increment(&self, number: CoreNumber) -> CoreNumber {
+        self.add(number.as_i32(), 1)
     }
 
-    pub const fn decrement(&self, number: i32) -> i32 {
-        self.add(number, -1)
+    pub const fn decrement(&self, number: CoreNumber) -> CoreNumber {
+        self.add(number.as_i32(), -1)
     }
 }

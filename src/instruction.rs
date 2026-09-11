@@ -1,12 +1,6 @@
 use std::fmt;
 
-use crate::{
-    instruction::{
-        addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode, operand::Operand,
-        operation::Operation,
-    },
-    rng,
-};
+use crate::instruction::{operand::Operand, operation::Operation};
 
 pub mod addressing_mode;
 pub mod modifier;
@@ -14,6 +8,11 @@ pub mod opcode;
 pub mod operand;
 pub mod operation;
 
+/// `Instruction` is a single assembly instruction in a successfully compiled `Warrior` program,
+/// and it contains arbitrary `i32` operand numbers, as a temporary, generalized form that can be
+/// loaded to `Core` with any `core_size`.
+///
+/// Thus, this is an instruction that has not been loaded to the `Core`, and it cannot be executed.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Instruction {
     pub operation: Operation,
@@ -33,17 +32,6 @@ impl Instruction {
         Self { operation, a, b }
     }
 
-    pub const fn dat(number: i32) -> Self {
-        Self {
-            operation: Operation {
-                opcode: Opcode::DAT,
-                modifier: Modifier::F,
-            },
-            a: Operand::direct(0),
-            b: Operand::direct(number),
-        }
-    }
-
     /// Convert this single instruction to Load File format.
     /// Reference: <https://corewar.co.uk/standards/icws94.htm#3.0>
     #[must_use]
@@ -61,36 +49,12 @@ impl Instruction {
             b_number = self.b.number,
         )
     }
-
-    /// Create a random `instruction` with its A and B numbers wrapped by `core_size`.
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_possible_wrap,
-        clippy::as_conversions,
-        reason = "These conversions are safe because the numbers are small."
-    )]
-    pub fn random_instruction_wrapped(core_size: usize) -> Self {
-        let opcode = Opcode::random_opcode();
-        let modifier = Modifier::random_modifier();
-
-        let a_mode = AddressingMode::random_addressing_mode();
-        let a_number = rng::rand_range(0, core_size) as i32;
-
-        let b_mode = AddressingMode::random_addressing_mode();
-        let b_number = rng::rand_range(0, core_size) as i32;
-
-        Self {
-            operation: Operation::new(opcode, modifier),
-            a: Operand::new(a_mode, a_number),
-            b: Operand::new(b_mode, b_number),
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::instruction::addressing_mode::AddressingMode;
+    use crate::instruction::{addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode};
 
     #[test]
     fn inspect_sizes() {

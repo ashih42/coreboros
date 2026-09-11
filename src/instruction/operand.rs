@@ -14,20 +14,6 @@ impl Operand {
         Self { mode, number }
     }
 
-    // #[must_use]
-    // pub const fn immediate_zero() -> Self {
-    //     Self::new(AddressingMode::Immediate, 0)
-    // }
-
-    // #[must_use]
-    // pub const fn direct_zero() -> Self {
-    //     Self::new(AddressingMode::Direct, 0)
-    // }
-
-    pub const fn immediate(number: i32) -> Self {
-        Self::new(AddressingMode::Immediate, number)
-    }
-
     pub const fn direct(number: i32) -> Self {
         Self::new(AddressingMode::Direct, number)
     }

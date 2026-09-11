@@ -3,13 +3,16 @@ use crate::{
         config::Config,
         core_number::CoreNumber,
         mars::{
-            core::Core, task_outcome::TaskOutcome, task_queue::TaskQueue,
+            core::Core, core_cell::CoreCell, core_instruction::CoreInstruction,
+            task_outcome::TaskOutcome, task_queue::TaskQueue,
             warrior_placement_planner::WarriorPlacementPlanner,
         },
     },
-    instruction::{Instruction, addressing_mode::AddressingMode, opcode::Opcode},
+    instruction::{addressing_mode::AddressingMode, opcode::Opcode},
     warrior::{Warrior, warrior_id::WarriorId},
 };
+
+pub mod core_instruction;
 
 mod cell_slot_author;
 mod core;
@@ -84,10 +87,12 @@ impl Mars {
                 clippy::arithmetic_side_effects,
                 reason = "This expression cannot cause overflow."
             )]
-            let position = CoreNumber::from_usize(starting_position + i, self.core.get_size());
+            let address = CoreNumber::from_usize(starting_position + i, self.core.get_size());
 
-            self.core
-                .wrap_and_load_instruction(position, instruction, Some(warrior_id));
+            *self.core.get_cell_mut(address) = CoreCell::new(
+                CoreInstruction::from_instruction(instruction, self.core.get_size()),
+                Some(warrior_id),
+            );
         }
     }
 
@@ -173,7 +178,7 @@ impl Mars {
     /// Handle pre-decrement, then execute the instruction, then handle post-increment.
     fn execute_instruction(
         &mut self,
-        instruction: &Instruction,
+        instruction: &CoreInstruction,
         address: CoreNumber,
         warrior_id: WarriorId,
     ) -> TaskOutcome {
@@ -189,7 +194,7 @@ impl Mars {
     /// Check if `instruction` does pre-decrement in its A mode or B mode, and update the target cell's A or B field if applicable.
     fn write_pre_decrement(
         &mut self,
-        instruction: &Instruction,
+        instruction: &CoreInstruction,
         address: CoreNumber,
         warrior_id: WarriorId,
     ) {
@@ -223,7 +228,7 @@ impl Mars {
     /// Check if `instruction` does post-decrement in its A mode or B mode, and update the target cell's A or B field if applicable.
     fn write_post_increment(
         &mut self,
-        instruction: &Instruction,
+        instruction: &CoreInstruction,
         address: CoreNumber,
         warrior_id: WarriorId,
     ) {
@@ -255,7 +260,7 @@ impl Mars {
     /// Execute the instruction by calling the function corresponding to its `opcode`.
     fn execute_by_opcode(
         &mut self,
-        instruction: &Instruction,
+        instruction: &CoreInstruction,
         address: CoreNumber,
         warrior_id: WarriorId,
     ) -> TaskOutcome {

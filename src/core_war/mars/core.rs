@@ -2,9 +2,13 @@ use crate::{
     core_war::{
         config::{Config, core_initialization_strategy::CoreInitializationStrategy},
         core_number::CoreNumber,
-        mars::{core_cell::CoreCell, math_executor::MathExecutor},
+        mars::{
+            core_cell::CoreCell,
+            core_instruction::{CoreInstruction, core_operand::CoreOperand},
+            math_executor::MathExecutor,
+        },
     },
-    instruction::{Instruction, addressing_mode::AddressingMode, operand::Operand},
+    instruction::addressing_mode::AddressingMode,
     warrior::warrior_id::WarriorId,
 };
 
@@ -25,7 +29,7 @@ impl Core {
                 vec![CoreCell::default(); core_size].into_boxed_slice()
             }
             CoreInitializationStrategy::Random => std::iter::repeat_with(|| {
-                CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
+                CoreCell::new(CoreInstruction::random_instruction(core_size), None)
             })
             .take(core_size)
             .collect(),
@@ -51,7 +55,7 @@ impl Core {
             CoreInitializationStrategy::Random => {
                 let core_size = self.get_size();
                 self.cells.fill_with(|| {
-                    CoreCell::new(Instruction::random_instruction_wrapped(core_size), None)
+                    CoreCell::new(CoreInstruction::random_instruction(core_size), None)
                 });
             }
         }
@@ -78,18 +82,6 @@ impl Core {
 
         #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
         &mut self.cells[index]
-    }
-
-    /// Given an `instruction`, wrap its operand values, and load this wrapped instruction to the core at `address`.
-    pub fn wrap_and_load_instruction(
-        &mut self,
-        address: CoreNumber,
-        instruction: &Instruction,
-        author: Option<WarriorId>,
-    ) {
-        let wrapped_instruction = self.math_executor.wrap_instruction(instruction);
-
-        *self.get_cell_mut(address) = CoreCell::new(wrapped_instruction, author);
     }
 
     /// Note: This function requires `address` to be valid.
@@ -128,12 +120,12 @@ impl Core {
         cell.set_b_number(b_number, author);
     }
 
-    pub const fn resolve_address(&self, address: CoreNumber, offset: i32) -> CoreNumber {
+    pub const fn resolve_address(&self, address: CoreNumber, offset: CoreNumber) -> CoreNumber {
         #[allow(
             clippy::arithmetic_side_effects,
             reason = "This expression cannot cause overflow/underflow."
         )]
-        let destination = address.as_i32() + offset;
+        let destination = address.as_i32() + offset.as_i32();
         let core_size = self.get_size();
 
         CoreNumber::from_i32(destination, core_size)
@@ -144,7 +136,7 @@ impl Core {
     /// so here it is okay to resolve these variations of indirect modes in the same way.
     pub fn resolve_operand_address(
         &self,
-        operand: Operand,
+        operand: CoreOperand,
         current_address: CoreNumber,
     ) -> CoreNumber {
         use AddressingMode as AM;
@@ -167,8 +159,8 @@ impl Core {
     pub fn resolve_instruction_a_b(
         &self,
         current_address: CoreNumber,
-        operand: Operand,
-    ) -> (Instruction, i32, i32) {
+        operand: CoreOperand,
+    ) -> (CoreInstruction, CoreNumber, CoreNumber) {
         let address = self.resolve_operand_address(operand, current_address);
         let instruction = self.get_cell(address).instruction;
 
@@ -178,7 +170,7 @@ impl Core {
         };
 
         let b_number = match operand.mode {
-            AddressingMode::Immediate => 0,
+            AddressingMode::Immediate => CoreNumber::zero(),
             _ => instruction.b.number,
         };
 
@@ -200,22 +192,34 @@ mod tests {
         assert_eq!(core_size, 80);
 
         assert_eq!(
-            core.resolve_address(CoreNumber::from_i32(0, core_size), 0),
+            core.resolve_address(
+                CoreNumber::from_i32(0, core_size),
+                CoreNumber::from_i32(0, core_size)
+            ),
             CoreNumber::from_i32(0, core_size)
         );
 
         assert_eq!(
-            core.resolve_address(CoreNumber::from_i32(0, core_size), 10),
+            core.resolve_address(
+                CoreNumber::from_i32(0, core_size),
+                CoreNumber::from_i32(10, core_size)
+            ),
             CoreNumber::from_i32(10, core_size)
         );
 
         assert_eq!(
-            core.resolve_address(CoreNumber::from_i32(0, core_size), 100),
+            core.resolve_address(
+                CoreNumber::from_i32(0, core_size),
+                CoreNumber::from_i32(100, core_size)
+            ),
             CoreNumber::from_i32(20, core_size)
         );
 
         assert_eq!(
-            core.resolve_address(CoreNumber::from_i32(0, core_size), -1),
+            core.resolve_address(
+                CoreNumber::from_i32(0, core_size),
+                CoreNumber::from_i32(-1, core_size)
+            ),
             CoreNumber::from_i32(79, core_size)
         );
     }

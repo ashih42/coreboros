@@ -1,4 +1,5 @@
 /// `CoreNumber` is a non-negative integer within the range `[0, core_size - 1]`.
+///  Currently, the largest possible value of `core_size` is 8000.
 ///
 /// There are 2 situations where `CoreNumber` exist:
 /// - All addresses in the `Core` are `CoreNumber`.
@@ -6,7 +7,7 @@
 /// - All numeric values stored in the `Core` are `CoreNumber`.
 ///   - `Instruction` is transformed to `CoreInstruction` containing `CoreNumber`.
 ///   - All effects from executing instructions must result in `CoreNumber`.
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CoreNumber(u16);
 
 impl CoreNumber {
@@ -49,6 +50,11 @@ impl CoreNumber {
             reason = "`value` is guaranteed to be a small value that fits in a `u16`."
         )]
         Self(value as u16)
+    }
+
+    /// Construct `CoreNumber` containing a zero.
+    pub const fn zero() -> Self {
+        Self(0)
     }
 
     /// Convert `CoreNumber` to an index for accessing `CoreCell` in `Core`.

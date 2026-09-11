@@ -2,12 +2,15 @@ use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 use crate::{
-    core_war::{CoreWar, config::Config, core_number::CoreNumber},
+    core_war::{
+        CoreWar, config::Config, core_number::CoreNumber,
+        mars::core_instruction::core_operand::CoreOperand,
+    },
     game_context::{
         GameContext,
         renderer::{Renderer, color},
     },
-    instruction::{operand::Operand, operation::Operation},
+    instruction::operation::Operation,
     scene::{
         Scene,
         arena::{
@@ -60,7 +63,7 @@ impl Arena {
     pub fn new(warriors: Box<[Warrior]>, config: Config) -> Self {
         Self {
             core_war: CoreWar::new(warriors, config),
-            selected_address: CoreNumber::default(),
+            selected_address: CoreNumber::zero(),
             display_mode: DisplayMode::Grid,
             playback_manager: PlaybackManager::default(),
             should_reset_scrollbar_in_coredump: false,
@@ -118,7 +121,7 @@ impl Arena {
     fn start_new_game(&mut self) {
         self.stop();
 
-        self.selected_address = CoreNumber::default();
+        self.selected_address = CoreNumber::zero();
         self.core_war.reset(self.core_war.game_over);
     }
 
@@ -837,7 +840,7 @@ impl Arena {
 
     /// Draw a slot showing the an operand (addressing mode and number) of a row in the core dump.
     fn draw_operand_slot(
-        operand: Operand,
+        operand: CoreOperand,
         addressing_mode_bg_color: egui::Color32,
         number_bg_color: egui::Color32,
         slot_width: f32,
@@ -880,7 +883,7 @@ impl Arena {
                                 |ui| {
                                     ui.colored_label(
                                         egui::Color32::WHITE,
-                                        renderer.i32_to_str(operand.number),
+                                        renderer.i32_to_str(operand.number.as_i32()),
                                     );
                                 },
                             );

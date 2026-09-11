@@ -1,12 +1,15 @@
 use crate::{
-    core_war::mars::cell_slot_author::CellSlotAuthor, instruction::Instruction,
+    core_war::{
+        core_number::CoreNumber,
+        mars::{cell_slot_author::CellSlotAuthor, core_instruction::CoreInstruction},
+    },
     warrior::warrior_id::WarriorId,
 };
 
 /// `CoreCell` represents a concrete value written in the core at a specific address.
 #[derive(Clone)]
 pub struct CoreCell {
-    pub instruction: Instruction,
+    pub instruction: CoreInstruction,
     pub operation_author: CellSlotAuthor,
     pub a_author: CellSlotAuthor,
     pub b_author: CellSlotAuthor,
@@ -14,7 +17,7 @@ pub struct CoreCell {
 
 impl Default for CoreCell {
     fn default() -> Self {
-        let instruction = Instruction::dat(0);
+        let instruction = CoreInstruction::dat_zero();
 
         Self {
             instruction,
@@ -26,7 +29,7 @@ impl Default for CoreCell {
 }
 
 impl CoreCell {
-    pub fn new(instruction: Instruction, author: Option<WarriorId>) -> Self {
+    pub fn new(instruction: CoreInstruction, author: Option<WarriorId>) -> Self {
         Self {
             instruction,
             operation_author: author.into(),
@@ -35,7 +38,7 @@ impl CoreCell {
         }
     }
 
-    pub fn set_instruction(&mut self, instruction: Instruction, warrior_id: WarriorId) {
+    pub fn set_instruction(&mut self, instruction: CoreInstruction, warrior_id: WarriorId) {
         let author = Some(warrior_id).into();
 
         self.instruction = instruction;
@@ -44,12 +47,12 @@ impl CoreCell {
         self.b_author = author;
     }
 
-    pub fn set_a_number(&mut self, a_number: i32, warrior_id: WarriorId) {
+    pub fn set_a_number(&mut self, a_number: CoreNumber, warrior_id: WarriorId) {
         self.instruction.a.number = a_number;
         self.a_author = Some(warrior_id).into();
     }
 
-    pub fn set_b_number(&mut self, b_number: i32, warrior_id: WarriorId) {
+    pub fn set_b_number(&mut self, b_number: CoreNumber, warrior_id: WarriorId) {
         self.instruction.b.number = b_number;
         self.b_author = Some(warrior_id).into();
     }
