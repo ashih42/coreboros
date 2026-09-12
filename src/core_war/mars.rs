@@ -61,17 +61,17 @@ impl Mars {
     /// - Load warriors' instructions to core.
     /// - Populate task queues with initial tasks.
     fn load_warriors(&mut self, warriors: &[Warrior]) {
-        let starting_positions = self
+        let starting_addresses = self
             .warrior_placement_planner
             .determine_placements(&self.core, warriors);
 
-        for ((warrior_id, warrior), starting_position) in
+        for ((warrior_id, warrior), starting_address) in
             WarriorId::list_all_warrior_ids(warriors.len())
                 .zip(warriors)
-                .zip(starting_positions)
+                .zip(starting_addresses)
         {
-            self.load_instructions_to_core(warrior_id, warrior, starting_position);
-            self.spawn_initial_task(warrior_id, warrior, starting_position);
+            self.load_instructions_to_core(warrior_id, warrior, starting_address);
+            self.spawn_initial_task(warrior_id, warrior, starting_address);
         }
     }
 
@@ -80,14 +80,15 @@ impl Mars {
         &mut self,
         warrior_id: WarriorId,
         warrior: &Warrior,
-        starting_position: usize,
+        starting_address: CoreNumber,
     ) {
         for (i, instruction) in warrior.instructions.iter().enumerate() {
             #[allow(
                 clippy::arithmetic_side_effects,
                 reason = "This expression cannot cause overflow."
             )]
-            let address = CoreNumber::from_usize(starting_position + i, self.core.get_size());
+            let address =
+                CoreNumber::from_usize(starting_address.as_index() + i, self.core.get_size());
 
             *self.core.get_cell_mut(address) = CoreCell::new(
                 CoreInstruction::from_instruction(instruction, self.core.get_size()),
@@ -117,13 +118,16 @@ impl Mars {
         &mut self,
         warrior_id: WarriorId,
         warrior: &Warrior,
-        starting_position: usize,
+        starting_position: CoreNumber,
     ) {
         #[allow(
             clippy::arithmetic_side_effects,
             reason = "This expression cannot cause overflow."
         )]
-        let task = CoreNumber::from_usize(starting_position + warrior.origin, self.core.get_size());
+        let task = CoreNumber::from_usize(
+            starting_position.as_index() + warrior.origin,
+            self.core.get_size(),
+        );
 
         self.get_task_queue_mut(warrior_id).push_if_not_full(task);
     }

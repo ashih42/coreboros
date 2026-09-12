@@ -1,6 +1,7 @@
 use crate::{
     core_war::{
         config::{Config, warrior_separation_strategy::WarriorSeparationStrategy},
+        core_number::CoreNumber,
         mars::core::Core,
     },
     rng,
@@ -18,7 +19,7 @@ pub struct WarriorPlacementPlanner {
 /// This is used internally when the warrior order is also randomized.
 struct Placement {
     warrior_id: WarriorId,
-    address: usize,
+    address: CoreNumber,
 }
 
 impl WarriorPlacementPlanner {
@@ -30,8 +31,9 @@ impl WarriorPlacementPlanner {
     }
 
     /// Return the addresses to load each warrior's instructions to the core, in default warrior order.
+    ///
     /// Example: [0, 40] means to load warrior 0 at address 0, and warrior 1 at address 40.
-    pub fn determine_placements(&self, core: &Core, warriors: &[Warrior]) -> Box<[usize]> {
+    pub fn determine_placements(&self, core: &Core, warriors: &[Warrior]) -> Box<[CoreNumber]> {
         match self.warrior_separation_strategy {
             WarriorSeparationStrategy::Equal => Self::determine_placements_equal(core, warriors),
             WarriorSeparationStrategy::Random => self.determine_placements_random(core, warriors),
@@ -39,19 +41,23 @@ impl WarriorPlacementPlanner {
     }
 
     /// Determine placements under the `Equal` warrior separation strategy.
-    fn determine_placements_equal(core: &Core, warriors: &[Warrior]) -> Box<[usize]> {
+    /// This strategy simply sets an equal amount of empty cells beween all warriors.
+    fn determine_placements_equal(core: &Core, warriors: &[Warrior]) -> Box<[CoreNumber]> {
         let core_size = core.get_size();
 
         #[allow(clippy::arithmetic_side_effects, reason = "These numbers are small.")]
         (0..warriors.len())
             .map(|warrior_id| core_size / warriors.len() * warrior_id)
+            .map(CoreNumber::from_usize_unchecked)
             .collect()
     }
 
     /// Determine placements under the `Random` warrior separation strategy.
-    /// Note: This also randomizes the warrior order, so the result might look like
-    /// [40, 0], i.e. to load warrior 0 at address 40, and warrior 1 at address 0.
-    fn determine_placements_random(&self, core: &Core, warriors: &[Warrior]) -> Box<[usize]> {
+    /// This strategy randomizes the amount of empty cells between warriors,
+    /// and it also randomizes the sequential order warriors are placed on the core.
+    ///
+    /// Example: [40, 0] means to load warrior 0 at address 40, and warrior 1 at address 0.
+    fn determine_placements_random(&self, core: &Core, warriors: &[Warrior]) -> Box<[CoreNumber]> {
         let num_warriors = warriors.len();
 
         let mut placements = Vec::with_capacity(num_warriors);
@@ -63,7 +69,7 @@ impl WarriorPlacementPlanner {
         {
             placements.push(Placement {
                 warrior_id,
-                address,
+                address: CoreNumber::from_usize_unchecked(address),
             });
 
             #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
