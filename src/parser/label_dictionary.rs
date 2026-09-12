@@ -58,7 +58,12 @@ impl LabelDictionary {
         #[allow(
             clippy::cast_possible_wrap,
             clippy::cast_possible_truncation,
-            reason = "Number of Redcode instructions will be limited, so numbers can't get that high."
+            clippy::as_conversions,
+            reason = "These conversions are safe 👌"
+        )]
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "The subtraction operation is safe 👌"
         )]
         self.get_line_number(label).map(|target| {
             let target = target as i32;

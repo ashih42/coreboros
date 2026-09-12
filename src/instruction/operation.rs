@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::instruction::{modifier::Modifier, opcode::Opcode};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Operation {
     pub opcode: Opcode,
     pub modifier: Modifier,

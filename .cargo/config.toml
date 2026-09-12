@@ -1,0 +1,6 @@
+# Without this flag, linker would fail due to undefined symbols, such as `audio_init`.
+# Implementations of these symbols are provided by the Javascript runtime, so they cannot be resolved at link time.
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "link-arg=--allow-undefined",
+]

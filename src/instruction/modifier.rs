@@ -1,6 +1,9 @@
+use strum::AsRefStr;
 use strum_macros::{Display, EnumString};
 
-#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
+use crate::rng;
+
+#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq, AsRefStr)]
 #[strum(ascii_case_insensitive)]
 pub enum Modifier {
     A,
@@ -10,6 +13,25 @@ pub enum Modifier {
     F,
     X,
     I,
+}
+
+impl Modifier {
+    pub fn random_modifier() -> Self {
+        static ALL_MODIFIERS: &[Modifier] = &[
+            Modifier::A,
+            Modifier::B,
+            Modifier::AB,
+            Modifier::BA,
+            Modifier::F,
+            Modifier::X,
+            Modifier::I,
+        ];
+
+        let index = rng::rand_range(0, ALL_MODIFIERS.len());
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        ALL_MODIFIERS[index]
+    }
 }
 
 #[cfg(test)]

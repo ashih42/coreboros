@@ -45,6 +45,10 @@ pub fn scan_comment(key: CommentKeyPattern, comment: &str) -> Option<&str> {
 
 /// If `text` contains a match for `key_regex`, return the remaining non-whitespace string if possible.
 fn find_value<'a>(key_regex: &Regex, text: &'a str) -> Option<&'a str> {
+    #[allow(
+        clippy::string_slice,
+        reason = "The index from a regex match is valid 👌"
+    )]
     key_regex
         .find(text)
         .map(|mat| text[mat.end()..].trim())
