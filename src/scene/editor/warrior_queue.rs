@@ -1,18 +1,14 @@
-use crate::warrior::Warrior;
+use crate::warrior::{Warrior, warrior_id::MAX_NUMBER_OF_WARRIORS};
 
 /// `WarriorQueue` is an ordered collection of `Warrior` instances ready for gameplay.
 pub struct WarriorQueue {
     warriors: Vec<Warrior>,
 }
 
-/// Currently, `WarriorQueue` allows at most 8 `Warrior` in the queue because there are only
-/// these many easily distinguishable colors available for rendering.
-const MAX_CAPACITY: usize = 8;
-
 impl Default for WarriorQueue {
     fn default() -> Self {
         Self {
-            warriors: Vec::with_capacity(MAX_CAPACITY),
+            warriors: Vec::with_capacity(MAX_NUMBER_OF_WARRIORS),
         }
     }
 }
@@ -20,8 +16,8 @@ impl Default for WarriorQueue {
 impl From<Box<[Warrior]>> for WarriorQueue {
     /// Convert from a `Box<[Warrior]>` to `WarriorQueue`.
     fn from(input: Box<[Warrior]>) -> Self {
-        let mut warriors = Vec::with_capacity(MAX_CAPACITY);
-        warriors.extend(input.into_iter().take(MAX_CAPACITY));
+        let mut warriors = Vec::with_capacity(MAX_NUMBER_OF_WARRIORS);
+        warriors.extend(input.into_iter().take(MAX_NUMBER_OF_WARRIORS));
 
         Self { warriors }
     }
@@ -39,11 +35,11 @@ impl WarriorQueue {
     /// Return a bool indicating if `WarriorQueue` contains a valid number of `Warrior` to enter the arena.
     /// A valid number of `Warrior` is in range `[1, MAX_CAPACIT]`.
     pub fn is_ready_for_arena(&self) -> bool {
-        (1..=MAX_CAPACITY).contains(&self.warriors.len())
+        (1..=MAX_NUMBER_OF_WARRIORS).contains(&self.warriors.len())
     }
 
     pub const fn is_full(&self) -> bool {
-        self.warriors.len() == MAX_CAPACITY
+        self.warriors.len() == MAX_NUMBER_OF_WARRIORS
     }
 
     pub const fn len(&self) -> usize {

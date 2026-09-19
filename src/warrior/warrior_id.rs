@@ -5,9 +5,21 @@
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WarriorId(usize);
 
+/// This limit of number of warriors was determined because there are only these many easily distinguishable colors available for display.
+pub const MAX_NUMBER_OF_WARRIORS: usize = 8;
+
 impl WarriorId {
+    /// Construct a `WarriorId`.
+    ///
+    /// # Panics
+    /// Will panic if attempt to construct a `WarriorId` with `index` for more than `MAX_NUMBER_OF_WARRIORS` warriors.
     #[must_use]
-    pub const fn new(index: usize) -> Self {
+    pub fn new(index: usize) -> Self {
+        assert!(
+            index < MAX_NUMBER_OF_WARRIORS,
+            "Invalid WarriorId index: {index}"
+        );
+
         Self(index)
     }
 
