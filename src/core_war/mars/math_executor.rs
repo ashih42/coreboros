@@ -23,6 +23,7 @@ impl MathExecutor {
     }
 
     /// Convert the i32 `number` to a `CoreNumber`.
+    #[inline]
     const fn wrap(&self, number: i32) -> CoreNumber {
         CoreNumber::from_i32(number, self.core_size)
     }
@@ -36,9 +37,6 @@ impl MathExecutor {
     ) -> Option<CoreNumber> {
         use ArithmeticOperation as AO;
 
-        let a = a.as_i32();
-        let b = b.as_i32();
-
         match arithmetic {
             AO::Addition => Some(self.add(a, b)),
             AO::Subtraction => Some(self.subtract(a, b)),
@@ -50,7 +48,10 @@ impl MathExecutor {
 
     /// Add `a` and `b`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    pub const fn add(&self, a: i32, b: i32) -> CoreNumber {
+    const fn add(&self, a: CoreNumber, b: CoreNumber) -> CoreNumber {
+        let a = a.as_i32();
+        let b = b.as_i32();
+
         #[allow(
             clippy::arithmetic_side_effects,
             reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
@@ -60,7 +61,10 @@ impl MathExecutor {
 
     /// Subtract `a` from `b`, i.e. `b - a`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    pub const fn subtract(&self, a: i32, b: i32) -> CoreNumber {
+    const fn subtract(&self, a: CoreNumber, b: CoreNumber) -> CoreNumber {
+        let a = a.as_i32();
+        let b = b.as_i32();
+
         #[allow(
             clippy::arithmetic_side_effects,
             reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
@@ -70,7 +74,10 @@ impl MathExecutor {
 
     /// Multiply `a` and `b`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    const fn multiply(&self, a: i32, b: i32) -> CoreNumber {
+    const fn multiply(&self, a: CoreNumber, b: CoreNumber) -> CoreNumber {
+        let a = a.as_i32();
+        let b = b.as_i32();
+
         #[allow(
             clippy::arithmetic_side_effects,
             reason = "Because `a` and `b` are at most (core_size - 1), this expression cannot cause overflow/underflow."
@@ -80,7 +87,10 @@ impl MathExecutor {
 
     /// Divide `b` by `a`, i.e. `b / a`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    const fn divide(&self, a: i32, b: i32) -> Option<CoreNumber> {
+    const fn divide(&self, a: CoreNumber, b: CoreNumber) -> Option<CoreNumber> {
+        let a = a.as_i32();
+        let b = b.as_i32();
+
         if a == 0 {
             return None;
         }
@@ -94,7 +104,10 @@ impl MathExecutor {
 
     /// Get remainder of dividing `b` by `a`, i.e. `b % a`.
     /// Note: `a` and `b` are wrapped in range `[0, core_size - 1]`.
-    const fn modulo(&self, a: i32, b: i32) -> Option<CoreNumber> {
+    const fn modulo(&self, a: CoreNumber, b: CoreNumber) -> Option<CoreNumber> {
+        let a = a.as_i32();
+        let b = b.as_i32();
+
         if a == 0 {
             return None;
         }
@@ -106,11 +119,25 @@ impl MathExecutor {
         Some(self.wrap(b % a))
     }
 
-    pub const fn increment(&self, number: CoreNumber) -> CoreNumber {
-        self.add(number.as_i32(), 1)
+    /// Add 1 to `a`.
+    pub const fn increment(&self, a: CoreNumber) -> CoreNumber {
+        let a = a.as_i32();
+
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "Because `a` is at most (core_size - 1), this expression cannot cause overflow/underflow."
+        )]
+        self.wrap(a + 1)
     }
 
-    pub const fn decrement(&self, number: CoreNumber) -> CoreNumber {
-        self.add(number.as_i32(), -1)
+    /// Subtract 1 from `a`.
+    pub const fn decrement(&self, a: CoreNumber) -> CoreNumber {
+        let a = a.as_i32();
+
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "Because `a` is at most (core_size - 1), this expression cannot cause overflow/underflow."
+        )]
+        self.wrap(a - 1)
     }
 }
