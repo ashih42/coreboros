@@ -10,7 +10,7 @@ use crate::warrior::Warrior;
 impl Warrior {
     #[must_use]
     pub fn dwarf() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      dwarf
             ;strategy  I bomb every 4th cell.
 
@@ -42,7 +42,7 @@ impl Warrior {
 
     #[must_use]
     pub fn imp() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      imp
             ;strategy  I copy a single instruction forward.
 
@@ -54,7 +54,7 @@ impl Warrior {
 
     #[must_use]
     pub fn imp_factory() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      imp_factory
             ;strategy  I make imps.
 
@@ -67,7 +67,7 @@ impl Warrior {
 
     #[must_use]
     pub fn nop() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      nop
             ;strategy  I do nothing.
 
@@ -79,7 +79,7 @@ impl Warrior {
 
     #[must_use]
     pub fn nop_20() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      nop_20
             ;strategy  I do nothing 20 times.
 
@@ -111,7 +111,7 @@ impl Warrior {
 
     #[must_use]
     pub fn looping_paper() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      looping_paper
 
             paper   mov    #5,       #0
@@ -126,7 +126,7 @@ impl Warrior {
 
     #[must_use]
     pub fn blur_scanner() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      blur_scanner
 
             wptr    mov.b   scan,       #0
@@ -146,7 +146,7 @@ impl Warrior {
 
     #[must_use]
     pub fn transposition_stone() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      transposition_stone
 
             inc     spl    #-1185,   <1185
@@ -160,7 +160,7 @@ impl Warrior {
 
     #[must_use]
     pub fn self_bombing_stone() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      self_bombing_stone
 
                     spl     #0,     0
@@ -176,7 +176,7 @@ impl Warrior {
 
     #[must_use]
     pub fn self_vamping_vampire() -> Self {
-        let redcode = indoc::indoc! {"
+        let redcode = indoc! {"
             ;name      self_vamping_vampire
 
             inc         spl    #2895,       <-2895
