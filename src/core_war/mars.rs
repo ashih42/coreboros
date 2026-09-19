@@ -21,6 +21,7 @@ mod math_executor;
 mod opcode_executor;
 mod task_outcome;
 mod task_queue;
+mod tests;
 mod warrior_placement_planner;
 
 /// `Mars` ("Memory Array Redcode Simulator") is the virtual machine that executes Redcode instructions.
