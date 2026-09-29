@@ -1,5 +1,5 @@
-#[allow(unused_macros, reason = "This macro is only used for testing.")]
-/// Check if the A or B operand at `cell_index` holds the `expected` value.
+/// Check if `mars` has a cell at `cell_index` with its A or B operand equal to the `expected` value.
+#[macro_export]
 macro_rules! assert_operand_eq {
     ($mars:expr, $cell_index:literal, $operand:ident, $expected:expr) => {{
         assert_eq!(
@@ -14,6 +14,3 @@ macro_rules! assert_operand_eq {
         );
     }};
 }
-
-#[allow(unused_imports, reason = "This macro export is only used for testing.")]
-pub(crate) use assert_operand_eq;

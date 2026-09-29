@@ -1,11 +1,8 @@
 use indoc::indoc;
 
 use crate::{
-    core_war::{
-        config::Config,
-        core_number::CoreNumber,
-        mars::{Mars, tests::utils},
-    },
+    assert_operand_eq,
+    core_war::{config::Config, core_number::CoreNumber, mars::Mars},
     warrior::{Warrior, warrior_id::WarriorId},
 };
 
@@ -21,13 +18,13 @@ fn test_a_indirect_pre_decrement() {
     let warrior_id = WarriorId::new(0);
 
     // Before: Expect core[10].A == 0
-    utils::assert_operand_eq!(&mars, 10, a, 0);
+    assert_operand_eq!(&mars, 10, a, 0);
 
     // Execute 1 instruction.
     mars.step(warrior_id);
 
     // After: Expect core[10].A == core_size - 1
-    utils::assert_operand_eq!(&mars, 10, a, mars.core.get_size() - 1);
+    assert_operand_eq!(&mars, 10, a, mars.core.get_size() - 1);
 }
 
 #[test]
@@ -42,13 +39,13 @@ fn test_a_indirect_post_increment() {
     let warrior_id = WarriorId::new(0);
 
     // Before: Expect core[10].A == 0
-    utils::assert_operand_eq!(&mars, 10, a, 0);
+    assert_operand_eq!(&mars, 10, a, 0);
 
     // Execute 1 instruction.
     mars.step(warrior_id);
 
     // After: Expect core[10].A == 1
-    utils::assert_operand_eq!(&mars, 10, a, 1);
+    assert_operand_eq!(&mars, 10, a, 1);
 }
 
 #[test]
@@ -63,13 +60,13 @@ fn test_b_indirect_pre_decrement() {
     let warrior_id = WarriorId::new(0);
 
     // Before: Expect core[10].B == 0
-    utils::assert_operand_eq!(&mars, 10, b, 0);
+    assert_operand_eq!(&mars, 10, b, 0);
 
     // Execute 1 instruction.
     mars.step(warrior_id);
 
     // After: Expect core[10].B == core_size - 1
-    utils::assert_operand_eq!(&mars, 10, b, mars.core.get_size() - 1);
+    assert_operand_eq!(&mars, 10, b, mars.core.get_size() - 1);
 }
 
 #[test]
@@ -84,13 +81,13 @@ fn test_b_indirect_post_increment() {
     let warrior_id = WarriorId::new(0);
 
     // Before: Expect core[10].B == 0
-    utils::assert_operand_eq!(&mars, 10, b, 0);
+    assert_operand_eq!(&mars, 10, b, 0);
 
     // Execute 1 instruction.
     mars.step(warrior_id);
 
     // After: Expect core[10].B == 1
-    utils::assert_operand_eq!(&mars, 10, b, 1);
+    assert_operand_eq!(&mars, 10, b, 1);
 }
 
 #[test]
@@ -105,7 +102,7 @@ fn test_pre_decrement_work_even_if_task_dies() {
     let warrior_id = WarriorId::new(0);
 
     // Before: Expect core[10].A == 0
-    utils::assert_operand_eq!(&mars, 10, a, 0);
+    assert_operand_eq!(&mars, 10, a, 0);
 
     // Before: Expect 1 task.
     assert_eq!(mars.get_task_queue(warrior_id).len(), 1);
@@ -114,7 +111,7 @@ fn test_pre_decrement_work_even_if_task_dies() {
     mars.step(warrior_id);
 
     // After: Expect core[10].A == core_size - 1
-    utils::assert_operand_eq!(&mars, 10, a, mars.core.get_size() - 1);
+    assert_operand_eq!(&mars, 10, a, mars.core.get_size() - 1);
 
     // After: Expect 0 task.
     assert!(mars.get_task_queue(warrior_id).is_empty());
@@ -132,7 +129,7 @@ fn test_post_increment_work_even_if_task_dies() {
     let warrior_id = WarriorId::new(0);
 
     // Before: Expect core[10].A == 0
-    utils::assert_operand_eq!(&mars, 10, a, 0);
+    assert_operand_eq!(&mars, 10, a, 0);
 
     // Before: Expect 1 task.
     assert_eq!(mars.get_task_queue(warrior_id).len(), 1);
@@ -141,7 +138,7 @@ fn test_post_increment_work_even_if_task_dies() {
     mars.step(warrior_id);
 
     // After: Expect core[10].A == core_size - 1
-    utils::assert_operand_eq!(&mars, 10, a, 1);
+    assert_operand_eq!(&mars, 10, a, 1);
 
     // After: Expect 0 task.
     assert!(mars.get_task_queue(warrior_id).is_empty());
