@@ -13,8 +13,8 @@ use crate::{
 fn test_a_indirect_pre_decrement() {
     let mut mars = Mars::new(
         &[Warrior::from_text(indoc! {"
-                nop {10  ; AIndirectPreDecrement
-            "})
+            nop {10  ; AIndirectPreDecrement
+        "})
         .unwrap()],
         &Config::default(),
     );
@@ -34,8 +34,8 @@ fn test_a_indirect_pre_decrement() {
 fn test_a_indirect_post_increment() {
     let mut mars = Mars::new(
         &[Warrior::from_text(indoc! {"
-                nop }10  ; AIndirectPostIncrement
-            "})
+            nop }10  ; AIndirectPostIncrement
+        "})
         .unwrap()],
         &Config::default(),
     );
@@ -55,8 +55,8 @@ fn test_a_indirect_post_increment() {
 fn test_b_indirect_pre_decrement() {
     let mut mars = Mars::new(
         &[Warrior::from_text(indoc! {"
-                nop <10  ; BIndirectPreDecrement
-            "})
+            nop <10  ; BIndirectPreDecrement
+        "})
         .unwrap()],
         &Config::default(),
     );
@@ -76,8 +76,8 @@ fn test_b_indirect_pre_decrement() {
 fn test_b_indirect_post_increment() {
     let mut mars = Mars::new(
         &[Warrior::from_text(indoc! {"
-                nop >10  ; BIndirectPostIncrement
-            "})
+            nop >10  ; BIndirectPostIncrement
+        "})
         .unwrap()],
         &Config::default(),
     );
@@ -97,8 +97,8 @@ fn test_b_indirect_post_increment() {
 fn test_pre_decrement_work_even_if_task_dies() {
     let mut mars = Mars::new(
         &[Warrior::from_text(indoc! {"
-                dat {10  ; AIndirectPreDecrement
-            "})
+            dat {10  ; AIndirectPreDecrement
+        "})
         .unwrap()],
         &Config::default(),
     );
@@ -124,8 +124,8 @@ fn test_pre_decrement_work_even_if_task_dies() {
 fn test_post_increment_work_even_if_task_dies() {
     let mut mars = Mars::new(
         &[Warrior::from_text(indoc! {"
-                dat }10  ; AIndirectPostIncrement
-            "})
+            dat }10  ; AIndirectPostIncrement
+        "})
         .unwrap()],
         &Config::default(),
     );
