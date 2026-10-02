@@ -1,8 +1,6 @@
 use std::fmt;
 
-use crate::instruction::{
-    modifier::Modifier, opcode::Opcode, operand::Operand, operation::Operation,
-};
+use crate::instruction::{operand::Operand, operation::Operation};
 
 pub mod addressing_mode;
 pub mod modifier;
@@ -10,17 +8,12 @@ pub mod opcode;
 pub mod operand;
 pub mod operation;
 
-/*
-DAT uses operand B (operand A is set to #0).
-
-Other one-operand operators use operand A (operand B is set to #0).
-
-I think these unused operands may be used by other instructions, so it is NOT appropriate to
-record these optional operands as Option<Operand>
-
-*/
-
-#[derive(Clone, Copy)]
+/// `Instruction` is a single assembly instruction in a successfully compiled `Warrior` program,
+/// and it contains arbitrary `i32` operand numbers, as a temporary, generalized form that can be
+/// loaded to `Core` with any `core_size`.
+///
+/// Thus, this is an instruction that has not been loaded to the `Core`, and it cannot be executed.
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Instruction {
     pub operation: Operation,
     pub a: Operand,
@@ -39,8 +32,10 @@ impl Instruction {
         Self { operation, a, b }
     }
 
+    /// Convert this single instruction to Load File format.
+    /// Reference: <https://corewar.co.uk/standards/icws94.htm#3.0>
     #[must_use]
-    pub fn to_load_file(&self) -> String {
+    pub fn as_load_file(&self) -> String {
         const OPERATION_WIDTH: usize = 11;
         const OPERAND_WIDTH: usize = 12;
 
@@ -54,17 +49,21 @@ impl Instruction {
             b_number = self.b.number,
         )
     }
+}
 
-    /// `DAT.F $0, $0` is used as a strategy to initialize the core.
-    #[must_use]
-    pub const fn new_dat_f_0_0() -> Self {
-        Self {
-            operation: Operation {
-                opcode: Opcode::DAT,
-                modifier: Modifier::F,
-            },
-            a: Operand::direct_zero(),
-            b: Operand::direct_zero(),
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::instruction::{addressing_mode::AddressingMode, modifier::Modifier, opcode::Opcode};
+
+    #[test]
+    fn inspect_sizes() {
+        println!("Opcode: {}", std::mem::size_of::<Opcode>());
+        println!("Modifier: {}", std::mem::size_of::<Modifier>());
+        println!("AddressingMode: {}", std::mem::size_of::<AddressingMode>());
+
+        println!("Operation: {}", std::mem::size_of::<Operation>());
+        println!("Operand: {}", std::mem::size_of::<Operand>());
+        println!("Instruction: {}", std::mem::size_of::<Instruction>());
     }
 }

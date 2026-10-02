@@ -1,7 +1,14 @@
+use strum::AsRefStr;
 use strum_macros::{Display, EnumString};
 
+use crate::rng;
+
 // Reference: <https://corewars.org/docs/guide.html>
-#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq)]
+#[allow(
+    clippy::upper_case_acronyms,
+    reason = "The preferred style convention is to write opcodes in all capital letters."
+)]
+#[derive(Debug, Display, Clone, Copy, EnumString, Eq, PartialEq, AsRefStr)]
 #[strum(ascii_case_insensitive)]
 pub enum Opcode {
     DAT, // data (kills the process)
@@ -30,13 +37,38 @@ pub enum Opcode {
     STP, // save to p-space (saves a number to private storage space)
 
     NOP, // no operation (does nothing)
-
-         // ORG,
-         // EQU,
-         // END,
 }
 
-// TODO: Update tests
+impl Opcode {
+    pub fn random_opcode() -> Self {
+        static ALL_OPCODES: &[Opcode] = &[
+            Opcode::DAT,
+            Opcode::MOV,
+            Opcode::ADD,
+            Opcode::SUB,
+            Opcode::MUL,
+            Opcode::DIV,
+            Opcode::MOD,
+            Opcode::JMP,
+            Opcode::JMZ,
+            Opcode::JMN,
+            Opcode::DJN,
+            Opcode::SPL,
+            Opcode::CMP,
+            Opcode::SEQ,
+            Opcode::SNE,
+            Opcode::SLT,
+            Opcode::LDP,
+            Opcode::STP,
+            Opcode::NOP,
+        ];
+
+        let index = rng::rand_range(0, ALL_OPCODES.len());
+
+        #[allow(clippy::indexing_slicing, reason = "The index is valid 👌")]
+        ALL_OPCODES[index]
+    }
+}
 
 #[cfg(test)]
 mod tests {

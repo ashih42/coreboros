@@ -56,15 +56,15 @@ impl InstructionBuilder {
         match operand_2 {
             Some(operand_2) => (operand_1, operand_2),
             None => match opcode {
-                Opcode::DAT => (Operand::immediate_zero(), operand_1),
-                _ => (operand_1, Operand::direct_zero()),
+                Opcode::DAT => (Operand::direct(0), operand_1),
+                _ => (operand_1, Operand::direct(0)),
             },
         }
     }
 
     /// Determine the default `modifier` based on the given `opcode`, `a_mode`, and `b_mode`.
     /// See ICWS'88 to ICWS'94 Conversion: <https://corewar.co.uk/standards/icws94.htm#A2.1.2>
-    /// Reference: <https://corewars.org/docs/guide.html>
+    /// Reference: <https://corewars.org/docs/guide.html#start_modif>
     fn resolve_default_modifier(
         opcode: Opcode,
         a_mode: AddressingMode,
@@ -120,7 +120,7 @@ mod tests {
         let instruction_builder = InstructionBuilder {
             opcode: Opcode::DAT,
             modifier: None,
-            operand_1: OperandBuffer::new(None, Expr::Integer(5)),
+            operand_1: OperandBuffer::new(None, Expr::Integer("5".to_owned())),
             operand_2: None,
         };
         let label_dict = LabelDictionary::default();
@@ -135,7 +135,7 @@ mod tests {
                     modifier: Modifier::F,
                 },
                 a: Operand {
-                    mode: AddressingMode::Immediate,
+                    mode: AddressingMode::Direct,
                     number: 0
                 },
                 b: Operand {

@@ -1,0 +1,87 @@
+use egui_macroquad::egui;
+use regex::{Regex, RegexBuilder};
+
+use crate::scene::editor::syntax_kind::SyntaxKind;
+
+/// `SyntaxHighlighter` is responsible for processing user input redcode into a format where different
+/// syntactic entities are painted in different colors, for display in `egui::TextEdit` widget.
+pub struct SyntaxHighlighter {
+    rules: Vec<(Regex, SyntaxKind)>,
+}
+
+impl Default for SyntaxHighlighter {
+    #[allow(clippy::expect_used, reason = "Regexes are valid 👌")]
+    fn default() -> Self {
+        let operation_regex =
+            RegexBuilder::new(r"\b(DAT|MOV|ADD|SUB|MUL|DIV|MOD|JMP|JMZ|JMN|DJN|SPL|CMP|SEQ|SNE|SLT|LDP|STP|NOP)(\.(A|B|AB|BA|F|X|I))?\b")
+            .case_insensitive(true)
+            .build()
+            .expect("`operation_regex` regex pattern should be valid");
+
+        let pseudo_opcode_regex = RegexBuilder::new(r"\b(ORG|END)\b")
+            .case_insensitive(true)
+            .build()
+            .expect("`pseudo_opcode_regex` regex pattern should be valid");
+
+        let addressing_mode_regex = Regex::new(r"[#$*@{}<>]")
+            .expect("`addressing_mode_regex` regex pattern should be valid");
+
+        let comment_regex =
+            Regex::new(r"(?m);.*$").expect("`comment_regex` regex pattern should be valid");
+
+        let rules = vec![
+            (operation_regex, SyntaxKind::Operation),
+            (pseudo_opcode_regex, SyntaxKind::PseudoOpcode),
+            (addressing_mode_regex, SyntaxKind::AddressingMode),
+            (comment_regex, SyntaxKind::Comment),
+        ];
+
+        Self { rules }
+    }
+}
+
+impl SyntaxHighlighter {
+    /// Create a `LayoutJob` that encodes how to display `text`, with different syntactic entities shown
+    /// in different colors.
+    #[allow(
+        clippy::indexing_slicing,
+        clippy::string_slice,
+        reason = "Indices are valid 👌"
+    )]
+    pub fn highlight_text(&self, text: &str) -> egui::text::LayoutJob {
+        let mut layout_job = egui::text::LayoutJob::default();
+
+        // Build a character-by-character definition, assuming all characters default to `Other` syntax.
+        let mut syntax_kinds = vec![SyntaxKind::Other; text.len()];
+
+        // For each syntax regex match, overwrite each character's definition.
+        for (regex, syntax_kind) in &self.rules {
+            for mat in regex.find_iter(text) {
+                for i in mat.start()..mat.end() {
+                    if i < syntax_kinds.len() {
+                        syntax_kinds[i] = *syntax_kind;
+                    }
+                }
+            }
+        }
+
+        if !text.is_empty() {
+            let mut start = 0;
+            let mut current_syntax = syntax_kinds[0];
+
+            // Merge blocks of the same syntax and insert a block as a `TextFormat` entry in `layout_job`.
+            for (i, &syntax) in syntax_kinds.iter().enumerate() {
+                if syntax != current_syntax {
+                    layout_job.append(&text[start..i], 0.0, current_syntax.as_text_format());
+                    start = i;
+                    current_syntax = syntax;
+                }
+            }
+            // Append the final remaining block of syntax.
+            layout_job.append(&text[start..], 0.0, current_syntax.as_text_format());
+        }
+
+        layout_job.wrap.max_width = f32::INFINITY;
+        layout_job
+    }
+}

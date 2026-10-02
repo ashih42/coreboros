@@ -9,50 +9,64 @@ use crate::{
         redcode_line::RedcodeLine,
         redcode_parser,
     },
-    warrior::Warrior,
-    warrior_metadata::WarriorMetadata,
+    warrior::{Warrior, warrior_metadata::WarriorMetadata},
 };
 
 pub struct WarriorBuilder {
+    redcode: String,
     metadata: WarriorMetadata,
     lines: Vec<RedcodeLine>,
     label_dictionary: LabelDictionary,
 }
 
 impl WarriorBuilder {
-    /// Try to construct a `Warrior` from input Redcode file at `filepath`.
-    ///
-    /// # Errors
-    /// Will return `Err` if Warrior is not valid for any syntax, semantic, or logic reason.
-    pub fn from_file(filepath: &str) -> Result<Warrior> {
-        Self::new(filepath)
-            .and_then(Self::build)
-            .with_context(|| format!("Error in warrior: {filepath}"))
-    }
-
-    /// Try to construct a `WarriorBuilder`.
+    /// Try to construct a `Warrior` from input `redcode`.
     ///
     /// # Errors
     /// Will return `Err` if:
-    /// - Cannot open/read file.
-    /// - Input Redcode fails syntax analysis.
-    fn new(filepath: &str) -> Result<Self> {
-        let redcode = fs::read_to_string(filepath)?;
+    /// - Input Redcode fails syntax or semantic analysis.
+    /// - Warrior is not valid for any reason.
+    pub fn from_text(redcode: &str) -> Result<Warrior> {
+        Self::try_build(redcode).with_context(|| "Error in warrior".to_owned())
+    }
 
-        log::info!("Read input redcode from \"{filepath}\":\n\n{redcode}\n\n");
+    /// Try to construct a `Warrior` from input Redcode file at `path`.
+    /// Note: This function may be deprecated and subject to removal when this app is fully migrated to wasm app.
+    ///
+    /// # Errors
+    /// Will return `Err` if:
+    /// - File cannot be opened or read.
+    /// - Input Redcode fails syntax or semantic analysis.
+    /// - Warrior is not valid for any reason.
+    pub fn from_file(path: &str) -> Result<Warrior> {
+        fs::read_to_string(path)
+            .map_err(anyhow::Error::new) // Or your custom Error::from
+            .and_then(|redcode| Self::try_build(&redcode))
+            .with_context(|| format!("Error in warrior at: {path}"))
+    }
 
-        let mut lines = redcode_parser::parse_redcode(&redcode)?;
+    /// Try to construct a `Warrior`.
+    ///
+    /// # Errors
+    /// Will return `Err` if:
+    /// - Input Redcode fails syntax or semantic analysis.
+    /// - Warrior is not valid for any reason.
+    fn try_build(redcode: &str) -> Result<Warrior> {
+        let mut lines = redcode_parser::parse_redcode(redcode)?;
         Self::truncate_after_end(&mut lines);
 
         // for line in &lines {
         //     log::info!("{line:#?}");
         // }
 
-        Ok(Self {
-            metadata: WarriorMetadata::from_file(filepath),
+        let warrior_builder = Self {
+            redcode: redcode.to_owned(),
+            metadata: WarriorMetadata::default(),
             lines,
             label_dictionary: LabelDictionary::default(),
-        })
+        };
+
+        warrior_builder.build()
     }
 
     /// If a line with pseudo-instruction `END` is found, keep this line and remove all lines after it.
@@ -61,6 +75,10 @@ impl WarriorBuilder {
         let end_index = lines.iter().position(|line| line.end_instruction.is_some());
 
         if let Some(index) = end_index {
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "This is safe because there is a character limit on the user input redcode."
+            )]
             lines.truncate(index + 1);
         }
     }
@@ -96,9 +114,10 @@ impl WarriorBuilder {
 
         #[allow(
             clippy::cast_sign_loss,
+            clippy::as_conversions,
             reason = "`origin` has been validated to be non-negative."
         )]
-        let warrior = Warrior::new(self.metadata, instructions, origin as usize);
+        let warrior = Warrior::new(self.redcode, self.metadata, instructions, origin as usize);
         Ok(warrior)
     }
 
@@ -108,7 +127,8 @@ impl WarriorBuilder {
         #[allow(
             clippy::cast_possible_truncation,
             clippy::cast_possible_wrap,
-            reason = "`instructions` length will be capped."
+            clippy::as_conversions,
+            reason = "Instruction length will be reasonably small because user input length is limited."
         )]
         let instruction_size = instructions.len() as i32;
 
@@ -129,6 +149,10 @@ impl WarriorBuilder {
             }
 
             // Update instruction line counter.
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "Instruction length will be reasonably small because user input length is limited."
+            )]
             if line.instruction.is_some() {
                 current_instruction_line_number += 1;
             }
@@ -200,10 +224,13 @@ impl WarriorBuilder {
         label_dictionary: &LabelDictionary,
     ) -> Result<()> {
         // Build the concrete `instruction`.
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "Instruction length will be reasonably small because user input length is limited."
+        )]
         if let Some(instruction_builder) = line.instruction {
             let instruction =
                 instruction_builder.build(label_dictionary, *current_instruction_line_number)?;
-            // .with_context(|| "Error on line {line.text_line_number}")?;
 
             instructions.push(instruction);
             *current_instruction_line_number += 1;
@@ -231,7 +258,7 @@ mod tests {
 
     #[test]
     fn test_invalid_file() {
-        assert!(WarriorBuilder::new("warriors/no_such_file.red").is_err());
-        assert!(WarriorBuilder::new("warriors/no_permission.red").is_err());
+        assert!(WarriorBuilder::from_file("warriors/no_such_file.red").is_err());
+        assert!(WarriorBuilder::from_file("warriors/no_permission.red").is_err());
     }
 }
