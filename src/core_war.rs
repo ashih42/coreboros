@@ -68,8 +68,6 @@ impl CoreWar {
     }
 
     /// Execute one instruction.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
     pub fn step(&mut self) {
         if self.game_over {
             return;
@@ -77,7 +75,10 @@ impl CoreWar {
 
         self.mars.step(self.current_warrior_id);
 
-        self.cycle_counter += 1;
+        #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
+        {
+            self.cycle_counter += 1;
+        }
 
         if self.check_is_game_over() {
             self.set_game_over_and_determine_winner();

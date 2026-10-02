@@ -99,7 +99,6 @@ impl WarriorPlacementPlanner {
 
     /// Return "separators", which are the sizes of the blocks of empty cells between different warriors' instructions.
     /// Example: separators [10, 20] means there are 10 empty cells between warriors 0 and 1, and 20 empty cells between warriors 1 and 0.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
     #[allow(clippy::arithmetic_side_effects, reason = "The numbers are small.")]
     fn generate_random_separators(&self, core: &Core, warriors: &[Warrior]) -> Box<[usize]> {
         let core_size = core.get_size();
@@ -115,6 +114,7 @@ impl WarriorPlacementPlanner {
         let mut remaining_cells =
             core_size - total_instructions - (self.min_distance_between_warriors * num_warriors);
 
+        #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
         while remaining_cells != 0 {
             let index = rng::rand_range(0, num_warriors);
             separators[index] += 1;

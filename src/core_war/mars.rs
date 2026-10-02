@@ -147,8 +147,6 @@ impl Mars {
     /// Execute one instruction for the given `warrior_id`.
     /// Note: The current instruction to execute is cached. This is an important, as the values in the address
     /// containing the current instruction could be mutated in the middle of executing this instruction.
-    #[allow(clippy::indexing_slicing, reason = "The index is valid.")]
-    #[allow(clippy::arithmetic_side_effects, reason = "`cycle_counter` is small.")]
     pub fn step(&mut self, warrior_id: WarriorId) {
         if let Some(address) = self.get_task_queue_mut(warrior_id).pop() {
             let instruction = self.core.get_cell(address).instruction;
